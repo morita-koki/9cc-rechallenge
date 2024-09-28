@@ -2,7 +2,7 @@ CFLAGS=-std=c11 -g -static
 
 SRC:= $(wildcard src/*.c)
 
-9cc: $(SRC) 9cc.h
+9cc: $(SRC) src/9cc.h
 	$(CC) -o 9cc $(SRC) $(CFLAGS)
 
 test: 9cc

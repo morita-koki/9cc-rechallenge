@@ -36,11 +36,11 @@ Token *new_token(TokenKind kind, Token *cur, char *str, int len) {
   return tok;
 }
 
-Token *tokenize() {
+void tokenize() {
   char *p = user_input;
-  Token head;
-  head.next = NULL;
-  Token *cur = &head;
+  token = calloc(1, sizeof(Token));
+  token->next = NULL;
+  Token *cur = token;
 
   while (*p) {
     if (isspace(*p)) {
@@ -57,9 +57,15 @@ Token *tokenize() {
     }
 
     // single-letter punctuator
-    if (strchr("+-*/()<>", *p)) {
+    if (strchr("+-*/()<>=;", *p)) {
       cur = new_token(TK_RESERVED, cur, p, 1);
       p += 1;
+      continue;
+    }
+
+    // identifier
+    if ('a' <= *p && *p <= 'z') {
+      cur = new_token(TK_IDENT, cur, p++, 1);
       continue;
     }
 
@@ -74,6 +80,6 @@ Token *tokenize() {
     error_at(p, "invalid token");
   }
 
-  new_token(TK_EOF, cur, p, 0);
-  return head.next;
+  cur = new_token(TK_EOF, cur, p, 0);
+  token = token->next;
 }
