@@ -32,6 +32,16 @@ Token *consume_ident() {
   return tok;
 }
 
+Token *consume_return() {
+  if (token->kind != TK_RETURN) {
+    return NULL;
+    // error("expected an identifier");
+  }
+  Token *tok = token;
+  token = token->next;
+  return tok;
+}
+
 void expect(char *op) {
   if (token->kind != TK_RESERVED || strlen(op) != token->len ||
       memcmp(token->str, op, token->len))
@@ -68,6 +78,7 @@ Node *new_node_num(int val) {
 /* BNF (Backus-Naur Form)
   program    = stmt*
   stmt       = expr ";"
+              | "return" expr ";"
   expr       = assign
   assign     = equality ("=" assign)?
   equality   = relational ("==" relational | "!=" relational)*
@@ -87,6 +98,12 @@ void program() {
 }
 
 Node *stmt() {
+  if (consume_return()) {
+    Node *node = new_node(ND_RETURN, expr(), NULL);
+    expect(";");
+    return node;
+  }
+
   Node *node = expr();
   expect(";");
   return node;

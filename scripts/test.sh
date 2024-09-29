@@ -63,6 +63,24 @@ bar = 6;
 foo + bar;
 "
 
+assert 4 "return 4;"
+assert 5 "foo = 5; foo;"
+assert 8 "
+bar = 8; 
+return bar;
+"
+
+assert 10 "
+bar = 8; 
+return bar + 2;
+"
+
+assert 10 "
+foo = 4;
+bar = 6;
+return foo + bar;
+"
+
 
 
 # error check

@@ -27,6 +27,15 @@ void error_at(char *loc, char *fmt, ...) {
 
 bool starts_with(char *p, char *q) { return memcmp(p, q, strlen(q)) == 0; }
 
+bool is_alnum(char c) {
+  // clang-format off
+  return ('a' <= c && c <= 'z') || 
+         ('A' <= c && c <= 'Z') || 
+         ('0' <= c && c <= '9') || 
+         (c == '_');
+  // clang-format on
+}
+
 Token *new_token(TokenKind kind, Token *cur, char *str, int len) {
   Token *tok = calloc(1, sizeof(Token));
   tok->kind = kind;
@@ -60,6 +69,13 @@ void tokenize() {
     if (strchr("+-*/()<>=;", *p)) {
       cur = new_token(TK_RESERVED, cur, p, 1);
       p += 1;
+      continue;
+    }
+
+    // return
+    if (starts_with(p, "return") && !is_alnum(p[6])) {
+      cur = new_token(TK_RETURN, cur, p, 6);
+      p += 6;
       continue;
     }
 

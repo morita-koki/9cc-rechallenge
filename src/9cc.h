@@ -12,6 +12,7 @@ typedef enum {
   TK_RESERVED,  // 記号
   TK_IDENT,     // 識別子
   TK_NUM,       // 数字
+  TK_RETURN,    // return
   TK_EOF,       // 入力終わり
 } TokenKind;
 
@@ -36,6 +37,7 @@ typedef enum {
   ND_LE,      // <=
   ND_ASSIGN,  // =
   ND_LVAR,    // ローカル変数
+  ND_RETURN,  // return
   ND_NUM,     // 整数
 } NodeKind;
 
@@ -62,6 +64,7 @@ struct LVar {
 void error(char *fmt, ...);
 void error_at(char *loc, char *fmt, ...);
 bool starts_with(char *p, char *q);
+bool is_alnum(char c);
 Token *new_token(TokenKind kind, Token *cur, char *str, int len);
 void tokenize();
 
@@ -69,6 +72,7 @@ void tokenize();
 LVar *find_lvar(Token *tok);
 bool consume(char *op);
 Token *consume_ident();
+Token *consume_return();
 void expect(char *op);
 int expect_number();
 bool at_eof();
