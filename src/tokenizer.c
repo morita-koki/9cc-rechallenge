@@ -63,9 +63,12 @@ void tokenize() {
       continue;
     }
 
-    // identifier
+    // identifier (multiple-letter variable name)
     if ('a' <= *p && *p <= 'z') {
-      cur = new_token(TK_IDENT, cur, p++, 1);
+      char *q = p;
+      while ('a' <= *p && *p <= 'z') p++;
+      int len = p - q;
+      cur = new_token(TK_IDENT, cur, q, len);
       continue;
     }
 

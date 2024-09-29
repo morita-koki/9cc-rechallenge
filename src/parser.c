@@ -1,7 +1,17 @@
 #include "9cc.h"
 
 extern Token *token;
+extern LVar *locals;
 extern Node *code[100];
+
+LVar *find_lvar(Token *tok) {
+  for (LVar *var = locals; var; var = var->next) {
+    if (var->len == tok->len && !memcmp(tok->str, var->name, var->len)) {
+      return var;
+    }
+  }
+  return NULL;
+}
 
 bool consume(char *op) {
   if (token->kind != TK_RESERVED || strlen(op) != token->len ||
@@ -162,7 +172,25 @@ Node *primary() {
   Token *tok = consume_ident();
   if (tok) {
     Node *node = new_node(ND_LVAR, NULL, NULL);
-    node->offset = (tok->str[0] - 'a' + 1) * 8;
+    LVar *lvar = find_lvar(tok);
+
+    if (lvar) {
+      node->offset = lvar->offset;
+    } else {
+      // if new variable, add to locals
+      lvar = calloc(1, sizeof(LVar));
+      lvar->next = locals;
+      lvar->name = tok->str;
+      lvar->len = tok->len;
+      if (locals) {
+        lvar->offset = locals->offset + 8;
+      } else {
+        lvar->offset = 8;
+      }
+      locals = lvar;
+      node->offset = lvar->offset;
+    }
+    // node->offset = (tok->str[0] - 'a' + 1) * 8;
     return node;
   }
 

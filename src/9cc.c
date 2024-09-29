@@ -2,6 +2,7 @@
 
 char* user_input;
 Token* token;
+LVar* locals;
 Node* code[100];
 
 int main(int argc, char** argv) {

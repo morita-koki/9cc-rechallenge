@@ -1,5 +1,7 @@
 #include "9cc.h"
 
+extern LVar *locals;
+
 void gen(Node *node) {
   switch (node->kind) {
     case ND_NUM:
