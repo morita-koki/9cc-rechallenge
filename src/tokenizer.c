@@ -16,7 +16,6 @@ void error_at(char *loc, char *fmt, ...) {
   va_start(ap, fmt);
 
   int pos = loc - user_input;  // calc byte
-  // fprintf(stderr, "%d\n", pos);
   fprintf(stderr, "%s\n", user_input);
   fprintf(stderr, "%*s", pos, "");  // print pos spaces.
   fprintf(stderr, "^ ");

@@ -26,10 +26,6 @@ void gen(Node *node) {
       printf("  push rdi\n");
       return;
   }
-  // if (node->kind == ND_NUM) {
-  //   printf("  push %d\n", node->val);
-  //   return;
-  // }
 
   gen(node->lhs);
   gen(node->rhs);

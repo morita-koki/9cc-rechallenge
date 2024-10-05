@@ -25,7 +25,6 @@ bool consume(char *op) {
 Token *consume_ident() {
   if (token->kind != TK_IDENT) {
     return NULL;
-    // error("expected an identifier");
   }
   Token *tok = token;
   token = token->next;
@@ -35,7 +34,6 @@ Token *consume_ident() {
 Token *consume_return() {
   if (token->kind != TK_RETURN) {
     return NULL;
-    // error("expected an identifier");
   }
   Token *tok = token;
   token = token->next;
@@ -207,7 +205,6 @@ Node *primary() {
       locals = lvar;
       node->offset = lvar->offset;
     }
-    // node->offset = (tok->str[0] - 'a' + 1) * 8;
     return node;
   }
 
