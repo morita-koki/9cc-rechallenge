@@ -81,6 +81,34 @@ bar = 6;
 return foo + bar;
 "
 
+# if else statement
+assert 10 "
+foo = 4;
+bar = 6;
+if (foo == 4) return foo + bar;
+return 0;
+"
+
+assert 10 "
+foo = 4;
+bar = 6;
+if (1 == 5) return 3;
+return foo + bar;
+"
+
+assert 10 "
+foo = 4;
+bar = 6;
+if (foo == 4) return 10;
+else return 0;
+"
+
+assert 10 "
+foo = 4;
+bar = 6;
+if (foo == 5) return 0;
+else return foo + bar;
+"
 
 
 # error check

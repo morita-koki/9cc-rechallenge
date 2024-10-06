@@ -13,6 +13,10 @@ typedef enum {
   TK_IDENT,     // 識別子
   TK_NUM,       // 数字
   TK_RETURN,    // return
+  TK_IF,        // if
+  TK_ELSE,      // else
+  TK_WHILE,     // while
+  TK_FOR,       // for
   TK_EOF,       // 入力終わり
 } TokenKind;
 
@@ -38,6 +42,10 @@ typedef enum {
   ND_ASSIGN,  // =
   ND_LVAR,    // ローカル変数
   ND_RETURN,  // return
+  ND_IF,      // if
+  ND_ELSE,    // else
+  ND_WHILE,   // while
+  ND_FOR,     // for
   ND_NUM,     // 整数
 } NodeKind;
 
@@ -73,6 +81,8 @@ LVar *find_lvar(Token *tok);
 bool consume(char *op);
 Token *consume_ident();
 Token *consume_return();
+Token *consume_if();
+Token *consume_else();
 void expect(char *op);
 int expect_number();
 bool at_eof();

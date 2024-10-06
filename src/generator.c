@@ -4,8 +4,30 @@ extern LVar *locals;
 
 void gen(Node *node) {
   switch (node->kind) {
+    case ND_IF:
+      // if (A) B else C
+      gen(node->lhs);  // A
+      printf("  pop rax\n");
+      printf("  cmp rax, 0\n");
+      printf("  je .LelseXXX\n");
+      if (node->rhs->kind == ND_ELSE) {  // B
+        gen(node->rhs->lhs);
+      } else {
+        gen(node->rhs);
+      }
+      printf("  jmp .LendXXX\n");
+      printf(".LelseXXX:\n");
+      if (node->rhs->kind == ND_ELSE) {
+        gen(node->rhs->rhs);  // C
+      }
+      printf(".LendXXX:\n");
+      return;
     case ND_RETURN:
       gen(node->lhs);
+      printf("  pop rax\n");
+      printf("  mov rsp, rbp\n");
+      printf("  pop rbp\n");
+      printf("  ret\n");
       return;
     case ND_NUM:
       printf("  push %d\n", node->val);

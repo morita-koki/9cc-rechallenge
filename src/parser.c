@@ -40,6 +40,24 @@ Token *consume_return() {
   return tok;
 }
 
+Token *consume_if() {
+  if (token->kind != TK_IF) {
+    return NULL;
+  }
+  Token *tok = token;
+  token = token->next;
+  return tok;
+}
+
+Token *consume_else() {
+  if (token->kind != TK_ELSE) {
+    return NULL;
+  }
+  Token *tok = token;
+  token = token->next;
+  return tok;
+}
+
 void expect(char *op) {
   if (token->kind != TK_RESERVED || strlen(op) != token->len ||
       memcmp(token->str, op, token->len))
@@ -76,7 +94,10 @@ Node *new_node_num(int val) {
 /* BNF (Backus-Naur Form)
   program    = stmt*
   stmt       = expr ";"
-              | "return" expr ";"
+              | "if" "(" expr ")" stmt ("else" stmt)?
+              | "while" "(" expr ")" stmt
+              | "for" "(" expr? ";" expr? ";" expr? ")" stmt
+              | ...
   expr       = assign
   assign     = equality ("=" assign)?
   equality   = relational ("==" relational | "!=" relational)*
@@ -99,6 +120,25 @@ Node *stmt() {
   if (consume_return()) {
     Node *node = new_node(ND_RETURN, expr(), NULL);
     expect(";");
+    return node;
+  }
+
+  if (consume_if()) {
+    Node *node = new_node(ND_IF, NULL, NULL);
+    expect("(");
+    node->lhs = expr();
+    expect(")");
+    node->rhs = stmt();
+    // if (A) B
+    //    node->lhs = A, node->rhs = B
+    // if (A) B else C
+    //    node->lhs = A, node->rhs->lhs = B, node->rhs->rhs = C
+    if (consume_else()) {
+      Node *else_node = new_node(ND_ELSE, NULL, NULL);
+      else_node->lhs = node->rhs;
+      else_node->rhs = stmt();
+      node->rhs = else_node;
+    }
     return node;
   }
 
