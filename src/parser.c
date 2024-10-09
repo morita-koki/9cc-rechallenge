@@ -58,6 +58,24 @@ Token *consume_else() {
   return tok;
 }
 
+Token *consume_while() {
+  if (token->kind != TK_WHILE) {
+    return NULL;
+  }
+  Token *tok = token;
+  token = token->next;
+  return tok;
+}
+
+Token *consume_for() {
+  if (token->kind != TK_FOR) {
+    return NULL;
+  }
+  Token *tok = token;
+  token = token->next;
+  return tok;
+}
+
 void expect(char *op) {
   if (token->kind != TK_RESERVED || strlen(op) != token->len ||
       memcmp(token->str, op, token->len))
@@ -139,6 +157,38 @@ Node *stmt() {
       else_node->rhs = stmt();
       node->rhs = else_node;
     }
+    return node;
+  }
+
+  if (consume_while()) {
+    Node *node = new_node(ND_WHILE, NULL, NULL);
+    expect("(");
+    node->lhs = expr();
+    expect(")");
+    node->rhs = stmt();
+    return node;
+  }
+
+  if (consume_for()) {
+    // for (A; B; C) D
+    Node *for_node_left = new_node(ND_FOR_LEFT, NULL, NULL);
+    Node *for_node_right = new_node(ND_FOR_RIGHT, NULL, NULL);
+    expect("(");
+    if (!consume(";")) {
+      for_node_left->lhs = expr();  // A
+      expect(";");
+    }
+    if (!consume(";")) {
+      for_node_left->rhs = expr();  // B
+      expect(";");
+    }
+    if (!consume(")")) {
+      for_node_right->lhs = expr();  // C
+      expect(")");
+    }
+    for_node_right->rhs = stmt();  // D
+
+    Node *node = new_node(ND_FOR, for_node_left, for_node_right);
     return node;
   }
 

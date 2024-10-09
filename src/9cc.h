@@ -31,22 +31,24 @@ struct Token {
 };
 
 typedef enum {
-  ND_ADD,     // +
-  ND_SUB,     // -
-  ND_MUL,     // *
-  ND_DIV,     // /
-  ND_EQ,      // ==
-  ND_NE,      // !=
-  ND_LT,      // <
-  ND_LE,      // <=
-  ND_ASSIGN,  // =
-  ND_LVAR,    // ローカル変数
-  ND_RETURN,  // return
-  ND_IF,      // if
-  ND_ELSE,    // else
-  ND_WHILE,   // while
-  ND_FOR,     // for
-  ND_NUM,     // 整数
+  ND_ADD,        // +
+  ND_SUB,        // -
+  ND_MUL,        // *
+  ND_DIV,        // /
+  ND_EQ,         // ==
+  ND_NE,         // !=
+  ND_LT,         // <
+  ND_LE,         // <=
+  ND_ASSIGN,     // =
+  ND_LVAR,       // ローカル変数
+  ND_RETURN,     // return
+  ND_IF,         // if
+  ND_ELSE,       // else
+  ND_WHILE,      // while
+  ND_FOR,        // for
+  ND_FOR_LEFT,   // for
+  ND_FOR_RIGHT,  // for
+  ND_NUM,        // 整数
 } NodeKind;
 
 typedef struct Node Node;

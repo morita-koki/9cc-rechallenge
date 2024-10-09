@@ -111,6 +111,31 @@ else return foo + bar;
 "
 
 
+# while statement
+assert 10 "
+foo = 4;
+bar = 6;
+while (foo < 10) foo = foo + 1;
+return foo;
+"
+
+assert 10 "
+foo = 4;
+bar = 6;
+while (foo < 10) return 10;
+return foo;
+"
+
+# for statement
+assert 10 "
+foo = 0;
+bar = 6;
+for (i = 0; i < 10; i = i + 1) foo = foo + 1;
+return foo;
+"
+
+
+
 # error check
 # assert 6 "1 + 2 ++ 3"
 # assert 8 "1 + 2 + 3 3"

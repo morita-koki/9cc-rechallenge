@@ -9,7 +9,7 @@ test: 9cc
 	scripts/test.sh
 
 clean:
-	rm -f 9cc *.o *~ tmp*
+	rm -f 9cc *.o *~ tmp* *.s
 
 format:
 	scripts/format.sh

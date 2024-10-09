@@ -4,6 +4,46 @@ extern LVar *locals;
 
 void gen(Node *node) {
   switch (node->kind) {
+    case ND_FOR:
+      //   Aをコンパイルしたコード
+      // .LbeginXXX:
+      //   Bをコンパイルしたコード
+      //   pop rax
+      //   cmp rax, 0
+      //   je  .LendXXX
+      //   Dをコンパイルしたコード
+      //   Cをコンパイルしたコード
+      //   jmp .LbeginXXX
+      // .LendXXX:
+      gen(node->lhs->lhs);  // A
+      printf(".LbeginXXX:\n");
+      gen(node->lhs->rhs);  // B
+      printf("  pop rax\n");
+      printf("  cmp rax, 0\n");
+      printf("  je .LendXXX\n");
+      gen(node->rhs->rhs);  // D
+      gen(node->rhs->lhs);  // C
+      printf("  jmp .LbeginXXX\n");
+      printf(".LendXXX:\n");
+      return;
+    case ND_WHILE:
+      //.LbeginXXX:
+      // Aをコンパイルしたコード
+      // pop rax
+      // cmp rax, 0
+      // je  .LendXXX
+      // Bをコンパイルしたコード
+      // jmp .LbeginXXX
+      // .LendXXX:
+      printf(".LbeginXXX:\n");
+      gen(node->lhs);  // A
+      printf("  pop rax\n");
+      printf("  cmp rax, 0\n");
+      printf("  je .LendXXX\n");
+      gen(node->rhs);  // B
+      printf("  jmp .LbeginXXX\n");
+      printf(".LendXXX:\n");
+      return;
     case ND_IF:
       // if (A) B else C
       gen(node->lhs);  // A
