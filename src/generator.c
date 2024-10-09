@@ -1,8 +1,12 @@
 #include "9cc.h"
 
 extern LVar *locals;
+extern int label_count;
 
 void gen(Node *node) {
+  label_count++;
+  int id = label_count;
+
   switch (node->kind) {
     case ND_FOR:
       //   Aをコンパイルしたコード
@@ -16,15 +20,15 @@ void gen(Node *node) {
       //   jmp .LbeginXXX
       // .LendXXX:
       gen(node->lhs->lhs);  // A
-      printf(".LbeginXXX:\n");
+      printf(".Lbegin%03d:\n", id);
       gen(node->lhs->rhs);  // B
       printf("  pop rax\n");
       printf("  cmp rax, 0\n");
-      printf("  je .LendXXX\n");
+      printf("  je .Lend%03d\n", id);
       gen(node->rhs->rhs);  // D
       gen(node->rhs->lhs);  // C
-      printf("  jmp .LbeginXXX\n");
-      printf(".LendXXX:\n");
+      printf("  jmp .Lbegin%03d\n", id);
+      printf(".Lend%03d:\n", id);
       return;
     case ND_WHILE:
       //.LbeginXXX:
@@ -35,32 +39,32 @@ void gen(Node *node) {
       // Bをコンパイルしたコード
       // jmp .LbeginXXX
       // .LendXXX:
-      printf(".LbeginXXX:\n");
+      printf(".Lbegin%03d:\n", id);
       gen(node->lhs);  // A
       printf("  pop rax\n");
       printf("  cmp rax, 0\n");
-      printf("  je .LendXXX\n");
+      printf("  je .Lend%03d\n", id);
       gen(node->rhs);  // B
-      printf("  jmp .LbeginXXX\n");
-      printf(".LendXXX:\n");
+      printf("  jmp .Lbegin%03d\n", id);
+      printf(".Lend%03d:\n", id);
       return;
     case ND_IF:
       // if (A) B else C
       gen(node->lhs);  // A
       printf("  pop rax\n");
       printf("  cmp rax, 0\n");
-      printf("  je .LelseXXX\n");
+      printf("  je .Lelse%03d\n", id);
       if (node->rhs->kind == ND_ELSE) {  // B
         gen(node->rhs->lhs);
       } else {
         gen(node->rhs);
       }
-      printf("  jmp .LendXXX\n");
-      printf(".LelseXXX:\n");
+      printf("  jmp .Lend%03d\n", id);
+      printf(".Lelse%03d:\n", id);
       if (node->rhs->kind == ND_ELSE) {
         gen(node->rhs->rhs);  // C
       }
-      printf(".LendXXX:\n");
+      printf(".Lend%03d:\n", id);
       return;
     case ND_RETURN:
       gen(node->lhs);

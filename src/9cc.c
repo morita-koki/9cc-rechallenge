@@ -4,6 +4,7 @@ char* user_input;
 Token* token;
 LVar* locals;
 Node* code[100];
+int label_count;
 
 int main(int argc, char** argv) {
   if (argc != 2) {
