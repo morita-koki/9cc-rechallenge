@@ -14,7 +14,20 @@ void gen(Node *node) {
         printf("  pop %s\n", argreg[i]);
       }
 
+      // check if RSP is aligned to 16 bytes
+      int id = label_count++;
+      printf("  mov rax, rsp\n");
+      printf("  and rax, 15\n");         // RAX <- RSP % 16
+      printf("  jnz .Lcall%03d\n", id);  // if RAX != 0, jump to .LcallXXX
+      printf("  mov rax, 0\n");
       printf("  call %s\n", node->funcname);
+      printf("  jmp .Lend%03d\n", id);
+      printf(".Lcall%03d:\n", id);
+      printf("  sub rsp, 8\n");  // align RSP to 16 bytes
+      printf("  mov rax, 0\n");
+      printf("  call %s\n", node->funcname);
+      printf("  add rsp, 8\n");  // restore RSP
+      printf(".Lend%03d:\n", id);
       printf("  push rax\n");
       return;
     case ND_BLOCK:
