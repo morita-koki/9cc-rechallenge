@@ -4,6 +4,38 @@ extern LVar *locals;
 extern int label_count;
 extern char *argreg[];
 
+char *funcname;
+
+void codegen(Function *prog) {
+  printf(".intel_syntax noprefix\n");
+
+  for (Function *func = prog; func; func = func->next) {
+    printf(".globl %s\n", func->name);
+    printf("%s:\n", func->name);
+    funcname = func->name;
+
+    // prologue
+    printf("  push rbp\n");
+    printf("  mov rbp, rsp\n");
+    printf("  sub rsp, %d\n", func->stack_size);
+
+    int i = 0;
+    for (LVar *lvar = func->args; lvar; lvar = lvar->next) {
+      printf("  mov [rbp-%d], %s\n", lvar->var->offset, argreg[i++]);
+    }
+
+    for (Node *node = func->node; node; node = node->next) {
+      gen(node);
+    }
+
+    // epilogue
+    printf(".Lreturn.%s:\n", func->name);
+    printf("  mov rsp, rbp\n");
+    printf("  pop rbp\n");
+    printf("  ret\n");
+  }
+}
+
 void gen(Node *node) {
   switch (node->kind) {
     case ND_FUNCCALL:
@@ -109,9 +141,7 @@ void gen(Node *node) {
     case ND_RETURN:
       gen(node->lhs);
       printf("  pop rax\n");
-      printf("  mov rsp, rbp\n");
-      printf("  pop rbp\n");
-      printf("  ret\n");
+      printf("  jmp .Lreturn.%s\n", funcname);
       return;
     case ND_NUM:
       printf("  push %d\n", node->val);
@@ -183,7 +213,6 @@ void gen_lval(Node *node) {
     error("代入の左辺値が変数ではありません");
   }
 
-  printf("  mov rax, rbp\n");
-  printf("  sub rax, %d\n", node->offset);
+  printf("  lea rax, [rbp-%d]\n", node->var->offset);
   printf("  push rax\n");
 }

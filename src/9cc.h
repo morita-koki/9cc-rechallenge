@@ -54,8 +54,11 @@ typedef enum {
 } NodeKind;
 
 typedef struct Node Node;
+typedef struct LVar LVar;
+typedef struct Var Var;
 
 struct Node {
+  Node *next;
   NodeKind kind;
   Node *lhs;
   Node *rhs;
@@ -69,17 +72,30 @@ struct Node {
   Node **args;
   int arg_count;
 
+  Var *var;  // kindがND_LVARのとき
   int val;
-  int offset;  // kindがND_LVARのとき
 };
-
-typedef struct LVar LVar;
 
 struct LVar {
   LVar *next;
+  Var *var;
+};
+
+struct Var {
   char *name;
   int len;
   int offset;
+};
+
+typedef struct Function Function;
+
+struct Function {
+  Function *next;
+  char *name;
+  Node *node;
+  LVar *args;    // arguments
+  LVar *locals;  // local variables
+  int stack_size;
 };
 
 /* tokenize functoins */
@@ -91,7 +107,9 @@ Token *new_token(TokenKind kind, Token *cur, char *str, int len);
 void tokenize();
 
 /* parser funcions (AST) */
-LVar *find_lvar(Token *tok);
+Var *find_lvar(Token *tok);
+Var *push_lvar(char *name, int len);
+LVar *read_func_args();
 bool consume(char *op);
 Token *consume_ident();
 Token *consume_return();
@@ -99,10 +117,12 @@ Token *consume_if();
 Token *consume_else();
 void expect(char *op);
 int expect_number();
+char *expect_ident();
 bool at_eof();
 Node *new_node(NodeKind kind, Node *lhs, Node *rhs);
 Node *new_node_num(int val);
-void program();
+Function *program();
+Function *function();
 Node *stmt();
 Node *expr();
 Node *assign();
@@ -114,6 +134,7 @@ Node *unary();
 Node *primary();
 
 /* generator */
+void codegen(Function *prog);
 void gen(Node *node);
 void gen_lval(Node *node);
 

@@ -2,8 +2,8 @@
 
 char* user_input;
 Token* token;
+Function* prog;
 LVar* locals;
-Node* code[100];
 int label_count;
 char* argreg[] = {"rdi", "rsi", "rdx", "rcx", "r8", "r9"};
 
@@ -15,26 +15,18 @@ int main(int argc, char** argv) {
 
   user_input = argv[1];
   tokenize();
-  program();
+  prog = program();
 
-  printf(".intel_syntax noprefix\n");
-  printf(".globl main\n");
-  printf("main:\n");
-
-  // prologue
-  printf("  push rbp\n");
-  printf("  mov rbp, rsp\n");
-  printf("  sub rsp, 208\n");
-
-  for (int i = 0; code[i]; i++) {
-    gen(code[i]);
-    printf("  pop rax\n");
+  for (Function* fn = prog; fn; fn = fn->next) {
+    // set stack size
+    int offset = 0;
+    for (LVar* lvar = fn->locals; lvar; lvar = lvar->next) {
+      offset += 8;
+      lvar->var->offset = offset;
+    }
+    fn->stack_size = offset;
   }
-
-  // epilogue
-  printf("  mov rsp, rbp\n");
-  printf("  pop rbp\n");
-  printf("  ret\n");
+  codegen(prog);
 
   return 0;
 }

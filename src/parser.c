@@ -4,13 +4,52 @@ extern Token *token;
 extern LVar *locals;
 extern Node *code[100];
 
-LVar *find_lvar(Token *tok) {
-  for (LVar *var = locals; var; var = var->next) {
-    if (var->len == tok->len && !memcmp(tok->str, var->name, var->len)) {
-      return var;
+Var *find_lvar(Token *tok) {
+  for (LVar *lvar = locals; lvar; lvar = lvar->next) {
+    if (lvar->var->len == tok->len &&
+        !memcmp(tok->str, lvar->var->name, lvar->var->len)) {
+      return lvar->var;
     }
   }
   return NULL;
+}
+
+Var *push_lvar(char *name, int len) {
+  Var *var = calloc(1, sizeof(Var));
+  var->name = name;
+  var->len = len;
+
+  LVar *lvar = calloc(1, sizeof(LVar));
+  lvar->var = var;
+  lvar->next = locals;
+  locals = lvar;
+  return var;
+}
+
+LVar *read_func_args() {
+  // func(arg0, arg1, arg2)
+  // locals: ...local1 -> local0 -> arg2 -> arg1 -> arg0
+  // args: arg0 -> arg1 -> arg2...
+
+  if (consume(")")) {
+    return NULL;
+  }
+
+  LVar head;
+  head.next = NULL;
+  LVar *cur = &head;
+
+  while (!consume(")")) {
+    cur->next = calloc(1, sizeof(LVar));
+    char *name = expect_ident();
+    cur->next->var = push_lvar(name, strlen(name));
+    cur = cur->next;
+    if (!consume(",")) {
+      expect(")");
+      break;
+    }
+  }
+  return head.next;
 }
 
 bool consume(char *op) {
@@ -92,6 +131,16 @@ int expect_number() {
   return val;
 }
 
+char *expect_ident() {
+  if (token->kind != TK_IDENT) {
+    error_at(token->str, "expected an identifier");
+  }
+  char *ident_name = malloc(token->len + 1);
+  memcpy(ident_name, token->str, token->len);
+  token = token->next;
+  return ident_name;
+}
+
 bool at_eof() { return token->kind == TK_EOF; }
 
 Node *new_node(NodeKind kind, Node *lhs, Node *rhs) {
@@ -110,13 +159,14 @@ Node *new_node_num(int val) {
 }
 
 /* BNF (Backus-Naur Form)
-  program    = stmt*
+  program    = function*
+  function   = ident "(" ")" "{" stmt* "}"
   stmt       = expr ";"
               | "{" stmt* "}"
               | "if" "(" expr ")" stmt ("else" stmt)?
               | "while" "(" expr ")" stmt
               | "for" "(" expr? ";" expr? ";" expr? ")" stmt
-              | ...
+              | "return" expr ";"
   expr       = assign
   assign     = equality ("=" assign)?
   equality   = relational ("==" relational | "!=" relational)*
@@ -127,12 +177,36 @@ Node *new_node_num(int val) {
   primary    = num | ident ("(" "")")? | "(" expr ")"
 */
 
-void program() {
-  int i = 0;
+Function *program() {
+  Function head;
+  head.next = NULL;
+  Function *cur = &head;
+
   while (!at_eof()) {
-    code[i++] = stmt();
+    cur->next = function();
+    cur = cur->next;
   }
-  code[i] = NULL;
+  return head.next;
+}
+
+Function *function() {
+  locals = NULL;
+  Function *fn = calloc(1, sizeof(Function));
+  fn->name = expect_ident();
+  expect("(");
+  fn->args = read_func_args();
+  expect("{");
+
+  Node head;
+  head.next = NULL;
+  Node *cur = &head;
+  while (!consume("}")) {
+    cur->next = stmt();
+    cur = cur->next;
+  }
+  fn->node = head.next;
+  fn->locals = locals;
+  return fn;
 }
 
 Node *stmt() {
@@ -312,22 +386,16 @@ Node *primary() {
 
     // ANCHOR: local variable
     Node *node = new_node(ND_LVAR, NULL, NULL);
-    LVar *lvar = find_lvar(tok);
-    if (lvar) {
-      node->offset = lvar->offset;
+    Var *var = find_lvar(tok);
+    if (var) {
+      node->var = var;
     } else {
       // if new variable, add to locals
-      lvar = calloc(1, sizeof(LVar));
-      lvar->next = locals;
-      lvar->name = tok->str;
-      lvar->len = tok->len;
-      if (locals) {
-        lvar->offset = locals->offset + 8;
-      } else {
-        lvar->offset = 8;
-      }
-      locals = lvar;
-      node->offset = lvar->offset;
+      char *name = malloc(tok->len + 1);
+      memcpy(name, tok->str, tok->len);
+      name[tok->len] = '\0';
+      Var *var = push_lvar(name, tok->len);
+      node->var = var;
     }
     return node;
   }
