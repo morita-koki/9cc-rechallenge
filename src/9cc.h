@@ -48,6 +48,7 @@ typedef enum {
   ND_FOR,        // for
   ND_FOR_LEFT,   // for
   ND_FOR_RIGHT,  // for
+  ND_FUNCCALL,   // 関数呼び出し
   ND_BLOCK,      // {}
   ND_NUM,        // 整数
 } NodeKind;
@@ -58,8 +59,14 @@ struct Node {
   NodeKind kind;
   Node *lhs;
   Node *rhs;
+
+  // Block
   Node **block;
   int block_count;
+
+  // func call
+  char *funcname;
+
   int val;
   int offset;  // kindがND_LVARのとき
 };

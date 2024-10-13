@@ -124,7 +124,7 @@ Node *new_node_num(int val) {
   add        = mul ("+" mul | "-" mul)*
   mul        = unary ("*" unary | "/" unary)*
   unary      = ("+" | "-")? unary | primary
-  primary    = num | ident | "(" expr ")"
+  primary    = num | ident ("(" "")")? | "(" expr ")"
 */
 
 void program() {
@@ -289,9 +289,18 @@ Node *primary() {
 
   Token *tok = consume_ident();
   if (tok) {
+    // ANCHOR: function call
+    if (consume("(")) {
+      Node *node = new_node(ND_FUNCCALL, NULL, NULL);
+      node->funcname = malloc(tok->len + 1);
+      memcpy(node->funcname, tok->str, tok->len);
+      expect(")");
+      return node;
+    }
+
+    // ANCHOR: local variable
     Node *node = new_node(ND_LVAR, NULL, NULL);
     LVar *lvar = find_lvar(tok);
-
     if (lvar) {
       node->offset = lvar->offset;
     } else {

@@ -1,11 +1,18 @@
 #!/bin/bash
 
+gcc -xc -c -o tmp_func.o - <<EOF
+int foo() {
+  return 5;
+}
+EOF
+
+
 assert() {
   expected="$1"
   input="$2"
 
   ./9cc "$input" > tmp.s
-  cc -o tmp tmp.s
+  cc -o tmp tmp.s tmp_func.o
   ./tmp
   actual="$?"
 
@@ -159,6 +166,10 @@ assert 10 "
 }
 return 10;
 "
+
+
+assert 5 " return foo();"
+assert 10 " return foo() + 5;"
 
 # error check
 # assert 6 "1 + 2 ++ 3"
