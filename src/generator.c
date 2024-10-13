@@ -2,10 +2,18 @@
 
 extern LVar *locals;
 extern int label_count;
+extern char *argreg[];
 
 void gen(Node *node) {
   switch (node->kind) {
     case ND_FUNCCALL:
+      for (int i = 0; i < node->arg_count; i++) {
+        gen(node->args[i]);
+      }
+      for (int i = node->arg_count - 1; i >= 0; i--) {
+        printf("  pop %s\n", argreg[i]);
+      }
+
       printf("  call %s\n", node->funcname);
       printf("  push rax\n");
       return;

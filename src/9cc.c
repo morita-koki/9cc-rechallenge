@@ -5,6 +5,7 @@ Token* token;
 LVar* locals;
 Node* code[100];
 int label_count;
+char* argreg[] = {"rdi", "rsi", "rdx", "rcx", "r8", "r9"};
 
 int main(int argc, char** argv) {
   if (argc != 2) {

@@ -4,6 +4,18 @@ gcc -xc -c -o tmp_func.o - <<EOF
 int foo() {
   return 5;
 }
+
+int add(int x, int y) {
+  return x + y;
+}
+
+int sub(int x, int y) {
+  return x - y;
+}
+
+int add6(int a, int b, int c, int d, int e, int f) {
+  return a + b + c + d + e + f;
+}
 EOF
 
 
@@ -176,6 +188,15 @@ return 10;
 
 assert 5 " return foo();"
 assert 10 " return foo() + 5;"
+
+assert 10 "return add(4, 6);"
+assert 10 "return add(4, add(2, 4));"
+assert 10 "return add(add(2, 4), 4);"
+
+assert 10 "return sub(20, 10);"
+assert 10 "return sub(sub(20, 5), 5);"
+
+assert 21 "return add6(1, 2, 3, 4, 5, 6);"
 
 # error check
 # assert 6 "1 + 2 ++ 3"

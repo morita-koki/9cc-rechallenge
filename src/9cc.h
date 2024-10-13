@@ -66,6 +66,8 @@ struct Node {
 
   // func call
   char *funcname;
+  Node **args;
+  int arg_count;
 
   int val;
   int offset;  // kindがND_LVARのとき

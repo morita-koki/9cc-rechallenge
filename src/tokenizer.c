@@ -65,7 +65,7 @@ void tokenize() {
     }
 
     // single-letter punctuator
-    if (strchr("+-*/()<>=;{}", *p)) {
+    if (strchr("+-*/()<>=;{},", *p)) {
       cur = new_token(TK_RESERVED, cur, p, 1);
       p += 1;
       continue;
@@ -107,9 +107,14 @@ void tokenize() {
     }
 
     // identifier (multiple-letter variable name)
-    if ('a' <= *p && *p <= 'z') {
+    // clang-format off
+    if (('a' <= *p && *p <= 'z') ||
+        ('A' <= *p && *p <= 'Z') || 
+        *p == '_')
+    // clang-format on
+    {
       char *q = p;
-      while ('a' <= *p && *p <= 'z') p++;
+      while (is_alnum(*p)) p++;
       int len = p - q;
       cur = new_token(TK_IDENT, cur, q, len);
       continue;

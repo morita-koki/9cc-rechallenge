@@ -294,7 +294,19 @@ Node *primary() {
       Node *node = new_node(ND_FUNCCALL, NULL, NULL);
       node->funcname = malloc(tok->len + 1);
       memcpy(node->funcname, tok->str, tok->len);
-      expect(")");
+
+      // function arguments
+      int arg_count = 0;
+      while (!consume(")")) {
+        node->args = realloc(node->args, sizeof(Node *) * (arg_count + 1));
+        node->args[arg_count] = expr();
+        arg_count += 1;
+        if (!consume(",")) {
+          expect(")");
+          break;
+        }
+      }
+      node->arg_count = arg_count;
       return node;
     }
 
