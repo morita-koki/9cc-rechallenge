@@ -142,6 +142,18 @@ Node *stmt() {
     return node;
   }
 
+  if (consume("{")) {
+    Node *node = new_node(ND_BLOCK, NULL, NULL);
+    int stmt_count = 0;
+    while (!consume("}")) {
+      node->block = realloc(node->block, sizeof(Node *) * (stmt_count + 1));
+      node->block[stmt_count] = stmt();
+      stmt_count += 1;
+    }
+    node->block_count = stmt_count;
+    return node;
+  }
+
   if (consume_if()) {
     Node *node = new_node(ND_IF, NULL, NULL);
     expect("(");

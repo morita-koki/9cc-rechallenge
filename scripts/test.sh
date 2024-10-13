@@ -134,7 +134,31 @@ for (i = 0; i < 10; i = i + 1) foo = foo + 1;
 return foo;
 "
 
+assert 10 "
+{
+  foo = 4;
+  bar = 6;
+  if (foo == 4) return 10;
+  else return 0;
+}
+"
 
+assert 10 "
+{
+  foo = 4;
+  bar = 6;
+  if (foo == 5) return 0;
+  else return foo + bar;
+}
+"
+
+assert 10 "
+{
+  foo = 4;
+  bar = 6;
+}
+return 10;
+"
 
 # error check
 # assert 6 "1 + 2 ++ 3"

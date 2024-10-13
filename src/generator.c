@@ -8,6 +8,12 @@ void gen(Node *node) {
   int id = label_count;
 
   switch (node->kind) {
+    case ND_BLOCK:
+      for (int i = 0; i < node->block_count; i++) {
+        gen(node->block[i]);
+        printf("  pop rax\n");
+      }
+      return;
     case ND_FOR:
       //   Aをコンパイルしたコード
       // .LbeginXXX:
