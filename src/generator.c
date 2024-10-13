@@ -4,9 +4,6 @@ extern LVar *locals;
 extern int label_count;
 
 void gen(Node *node) {
-  label_count++;
-  int id = label_count;
-
   switch (node->kind) {
     case ND_FUNCCALL:
       printf("  call %s\n", node->funcname);
@@ -18,7 +15,8 @@ void gen(Node *node) {
         printf("  pop rax\n");
       }
       return;
-    case ND_FOR:
+    case ND_FOR: {
+      int id = label_count++;
       //   Aをコンパイルしたコード
       // .LbeginXXX:
       //   Bをコンパイルしたコード
@@ -29,18 +27,26 @@ void gen(Node *node) {
       //   Cをコンパイルしたコード
       //   jmp .LbeginXXX
       // .LendXXX:
-      gen(node->lhs->lhs);  // A
+      if (node->lhs->lhs) {
+        gen(node->lhs->lhs);  // A
+      }
       printf(".Lbegin%03d:\n", id);
-      gen(node->lhs->rhs);  // B
-      printf("  pop rax\n");
-      printf("  cmp rax, 0\n");
-      printf("  je .Lend%03d\n", id);
+      if (node->lhs->rhs) {
+        gen(node->lhs->rhs);  // B
+        printf("  pop rax\n");
+        printf("  cmp rax, 0\n");
+        printf("  je .Lend%03d\n", id);
+      }
       gen(node->rhs->rhs);  // D
-      gen(node->rhs->lhs);  // C
+      if (node->rhs->lhs) {
+        gen(node->rhs->lhs);  // C
+      }
       printf("  jmp .Lbegin%03d\n", id);
       printf(".Lend%03d:\n", id);
       return;
-    case ND_WHILE:
+    }
+    case ND_WHILE: {
+      int id = label_count++;
       //.LbeginXXX:
       // Aをコンパイルしたコード
       // pop rax
@@ -58,7 +64,9 @@ void gen(Node *node) {
       printf("  jmp .Lbegin%03d\n", id);
       printf(".Lend%03d:\n", id);
       return;
-    case ND_IF:
+    }
+    case ND_IF: {
+      int id = label_count++;
       // if (A) B else C
       gen(node->lhs);  // A
       printf("  pop rax\n");
@@ -76,6 +84,7 @@ void gen(Node *node) {
       }
       printf(".Lend%03d:\n", id);
       return;
+    }
     case ND_RETURN:
       gen(node->lhs);
       printf("  pop rax\n");

@@ -142,6 +142,12 @@ return foo;
 "
 
 assert 10 "
+for (;;) return 10;
+return 5;
+"
+
+# block statement
+assert 10 "
 {
   foo = 4;
   bar = 6;
