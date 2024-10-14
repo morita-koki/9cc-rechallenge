@@ -70,29 +70,19 @@ void gen(Node *node) {
       return;
     case ND_FOR: {
       int id = label_count++;
-      //   Aをコンパイルしたコード
-      // .LbeginXXX:
-      //   Bをコンパイルしたコード
-      //   pop rax
-      //   cmp rax, 0
-      //   je  .LendXXX
-      //   Dをコンパイルしたコード
-      //   Cをコンパイルしたコード
-      //   jmp .LbeginXXX
-      // .LendXXX:
-      if (node->lhs->lhs) {
-        gen(node->lhs->lhs);  // A
+      if (node->init) {
+        gen(node->init);  // A
       }
       printf(".Lbegin%03d:\n", id);
-      if (node->lhs->rhs) {
-        gen(node->lhs->rhs);  // B
+      if (node->cond) {
+        gen(node->cond);  // B
         printf("  pop rax\n");
         printf("  cmp rax, 0\n");
         printf("  je .Lend%03d\n", id);
       }
-      gen(node->rhs->rhs);  // D
-      if (node->rhs->lhs) {
-        gen(node->rhs->lhs);  // C
+      gen(node->then);  // D
+      if (node->inc) {
+        gen(node->inc);  // C
       }
       printf("  jmp .Lbegin%03d\n", id);
       printf(".Lend%03d:\n", id);
@@ -100,42 +90,36 @@ void gen(Node *node) {
     }
     case ND_WHILE: {
       int id = label_count++;
-      //.LbeginXXX:
-      // Aをコンパイルしたコード
-      // pop rax
-      // cmp rax, 0
-      // je  .LendXXX
-      // Bをコンパイルしたコード
-      // jmp .LbeginXXX
-      // .LendXXX:
       printf(".Lbegin%03d:\n", id);
-      gen(node->lhs);  // A
+      gen(node->cond);
       printf("  pop rax\n");
       printf("  cmp rax, 0\n");
       printf("  je .Lend%03d\n", id);
-      gen(node->rhs);  // B
+      gen(node->then);
       printf("  jmp .Lbegin%03d\n", id);
       printf(".Lend%03d:\n", id);
       return;
     }
     case ND_IF: {
       int id = label_count++;
-      // if (A) B else C
-      gen(node->lhs);  // A
-      printf("  pop rax\n");
-      printf("  cmp rax, 0\n");
-      printf("  je .Lelse%03d\n", id);
-      if (node->rhs->kind == ND_ELSE) {  // B
-        gen(node->rhs->lhs);
+      if (node->els) {
+        gen(node->cond);  // A
+        printf("  pop rax\n");
+        printf("  cmp rax, 0\n");
+        printf("  je .Lelse%03d\n", id);
+        gen(node->then);
+        printf("  jmp .Lend%03d\n", id);
+        printf(".Lelse%03d:\n", id);
+        gen(node->els);
+        printf(".Lend%03d:\n", id);
       } else {
-        gen(node->rhs);
+        gen(node->cond);  // A
+        printf("  pop rax\n");
+        printf("  cmp rax, 0\n");
+        printf("  je .Lend%03d\n", id);
+        gen(node->then);
+        printf(".Lend%03d:\n", id);
       }
-      printf("  jmp .Lend%03d\n", id);
-      printf(".Lelse%03d:\n", id);
-      if (node->rhs->kind == ND_ELSE) {
-        gen(node->rhs->rhs);  // C
-      }
-      printf(".Lend%03d:\n", id);
       return;
     }
     case ND_RETURN:

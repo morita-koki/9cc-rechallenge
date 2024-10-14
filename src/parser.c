@@ -2,9 +2,12 @@
 
 extern Token *token;
 extern LVar *locals;
-extern Node *code[100];
 
-Var *find_lvar(Token *tok) {
+/* find variable from locals
+ * if found, return Var
+ * if not found, return NULL
+ */
+Var *find_var(Token *tok) {
   for (LVar *lvar = locals; lvar; lvar = lvar->next) {
     if (lvar->var->len == tok->len &&
         !memcmp(tok->str, lvar->var->name, lvar->var->len)) {
@@ -14,7 +17,12 @@ Var *find_lvar(Token *tok) {
   return NULL;
 }
 
-Var *push_lvar(char *name, int len) {
+/* push variable to locals
+ * return added variable
+ * must check if variable is already defined
+ *    before calling this function
+ */
+Var *push_var(char *name, int len) {
   Var *var = calloc(1, sizeof(Var));
   var->name = name;
   var->len = len;
@@ -42,7 +50,7 @@ LVar *read_func_args() {
   while (!consume(")")) {
     cur->next = calloc(1, sizeof(LVar));
     char *name = expect_ident();
-    cur->next->var = push_lvar(name, strlen(name));
+    cur->next->var = push_var(name, strlen(name));
     cur = cur->next;
     if (!consume(",")) {
       expect(")");
@@ -61,53 +69,17 @@ bool consume(char *op) {
   return true;
 }
 
+Token *consume_kind(TokenKind kind) {
+  if (token->kind != kind) {
+    return NULL;
+  }
+  Token *tok = token;
+  token = token->next;
+  return tok;
+}
+
 Token *consume_ident() {
   if (token->kind != TK_IDENT) {
-    return NULL;
-  }
-  Token *tok = token;
-  token = token->next;
-  return tok;
-}
-
-Token *consume_return() {
-  if (token->kind != TK_RETURN) {
-    return NULL;
-  }
-  Token *tok = token;
-  token = token->next;
-  return tok;
-}
-
-Token *consume_if() {
-  if (token->kind != TK_IF) {
-    return NULL;
-  }
-  Token *tok = token;
-  token = token->next;
-  return tok;
-}
-
-Token *consume_else() {
-  if (token->kind != TK_ELSE) {
-    return NULL;
-  }
-  Token *tok = token;
-  token = token->next;
-  return tok;
-}
-
-Token *consume_while() {
-  if (token->kind != TK_WHILE) {
-    return NULL;
-  }
-  Token *tok = token;
-  token = token->next;
-  return tok;
-}
-
-Token *consume_for() {
-  if (token->kind != TK_FOR) {
     return NULL;
   }
   Token *tok = token;
@@ -210,7 +182,7 @@ Function *function() {
 }
 
 Node *stmt() {
-  if (consume_return()) {
+  if (consume_kind(TK_RETURN)) {
     Node *node = new_node(ND_RETURN, expr(), NULL);
     expect(";");
     return node;
@@ -228,54 +200,49 @@ Node *stmt() {
     return node;
   }
 
-  if (consume_if()) {
-    Node *node = new_node(ND_IF, NULL, NULL);
+  if (consume_kind(TK_IF)) {
+    // if (cond) { then } else { els }
+    Node *node = calloc(1, sizeof(Node));
+    node->kind = ND_IF;
     expect("(");
-    node->lhs = expr();
+    node->cond = expr();
     expect(")");
-    node->rhs = stmt();
-    // if (A) B
-    //    node->lhs = A, node->rhs = B
-    // if (A) B else C
-    //    node->lhs = A, node->rhs->lhs = B, node->rhs->rhs = C
-    if (consume_else()) {
-      Node *else_node = new_node(ND_ELSE, NULL, NULL);
-      else_node->lhs = node->rhs;
-      else_node->rhs = stmt();
-      node->rhs = else_node;
+    node->then = stmt();
+    if (consume_kind(TK_ELSE)) {
+      node->els = stmt();
     }
     return node;
   }
 
-  if (consume_while()) {
+  if (consume_kind(TK_WHILE)) {
+    // while (cond) { then }
     Node *node = new_node(ND_WHILE, NULL, NULL);
     expect("(");
-    node->lhs = expr();
+    node->cond = expr();
     expect(")");
-    node->rhs = stmt();
+    node->then = stmt();
     return node;
   }
 
-  if (consume_for()) {
-    // for (A; B; C) D
-    Node *for_node_left = new_node(ND_FOR_LEFT, NULL, NULL);
-    Node *for_node_right = new_node(ND_FOR_RIGHT, NULL, NULL);
+  if (consume_kind(TK_FOR)) {
+    // for (init; cond; inc) { then }
+    Node *node = calloc(1, sizeof(Node));
+    node->kind = ND_FOR;
     expect("(");
     if (!consume(";")) {
-      for_node_left->lhs = expr();  // A
+      node->init = expr();
       expect(";");
     }
     if (!consume(";")) {
-      for_node_left->rhs = expr();  // B
+      node->cond = expr();
       expect(";");
     }
     if (!consume(")")) {
-      for_node_right->lhs = expr();  // C
+      node->inc = expr();
       expect(")");
     }
-    for_node_right->rhs = stmt();  // D
+    node->then = stmt();
 
-    Node *node = new_node(ND_FOR, for_node_left, for_node_right);
     return node;
   }
 
@@ -386,7 +353,7 @@ Node *primary() {
 
     // ANCHOR: local variable
     Node *node = new_node(ND_LVAR, NULL, NULL);
-    Var *var = find_lvar(tok);
+    Var *var = find_var(tok);
     if (var) {
       node->var = var;
     } else {
@@ -394,7 +361,7 @@ Node *primary() {
       char *name = malloc(tok->len + 1);
       memcpy(name, tok->str, tok->len);
       name[tok->len] = '\0';
-      Var *var = push_lvar(name, tok->len);
+      Var *var = push_var(name, tok->len);
       node->var = var;
     }
     return node;

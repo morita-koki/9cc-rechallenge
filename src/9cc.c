@@ -1,5 +1,6 @@
 #include "9cc.h"
 
+/* Global variables */
 char* user_input;
 Token* token;
 Function* prog;

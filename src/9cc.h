@@ -10,7 +10,7 @@
 
 typedef enum {
   TK_RESERVED,  // 記号
-  TK_IDENT,     // 識別子
+  TK_IDENT,     // 識別子 変数名、関数名
   TK_NUM,       // 数字
   TK_RETURN,    // return
   TK_IF,        // if
@@ -31,26 +31,24 @@ struct Token {
 };
 
 typedef enum {
-  ND_ADD,        // +
-  ND_SUB,        // -
-  ND_MUL,        // *
-  ND_DIV,        // /
-  ND_EQ,         // ==
-  ND_NE,         // !=
-  ND_LT,         // <
-  ND_LE,         // <=
-  ND_ASSIGN,     // =
-  ND_LVAR,       // ローカル変数
-  ND_RETURN,     // return
-  ND_IF,         // if
-  ND_ELSE,       // else
-  ND_WHILE,      // while
-  ND_FOR,        // for
-  ND_FOR_LEFT,   // for
-  ND_FOR_RIGHT,  // for
-  ND_FUNCCALL,   // 関数呼び出し
-  ND_BLOCK,      // {}
-  ND_NUM,        // 整数
+  ND_ADD,       // +
+  ND_SUB,       // -
+  ND_MUL,       // *
+  ND_DIV,       // /
+  ND_EQ,        // ==
+  ND_NE,        // !=
+  ND_LT,        // <
+  ND_LE,        // <=
+  ND_ASSIGN,    // =
+  ND_LVAR,      // ローカル変数
+  ND_RETURN,    // return
+  ND_IF,        // if
+  ND_ELSE,      // else
+  ND_WHILE,     // while
+  ND_FOR,       // for
+  ND_FUNCCALL,  // 関数呼び出し
+  ND_BLOCK,     // {}
+  ND_NUM,       // 整数
 } NodeKind;
 
 typedef struct Node Node;
@@ -66,6 +64,16 @@ struct Node {
   // Block
   Node **block;
   int block_count;
+
+  // if-else, while, for statement
+  // "if" (cond) { then } "else" { els }
+  // "for" (init; cond; inc) { then }
+  // "while" (cond) { then }
+  Node *cond;
+  Node *then;
+  Node *els;
+  Node *init;
+  Node *inc;
 
   // func call
   char *funcname;
@@ -102,19 +110,17 @@ struct Function {
 void error(char *fmt, ...);
 void error_at(char *loc, char *fmt, ...);
 bool starts_with(char *p, char *q);
+bool is_alpha(char c);
 bool is_alnum(char c);
 Token *new_token(TokenKind kind, Token *cur, char *str, int len);
 void tokenize();
 
 /* parser funcions (AST) */
-Var *find_lvar(Token *tok);
-Var *push_lvar(char *name, int len);
+Var *find_var(Token *tok);
+Var *push_var(char *name, int len);
 LVar *read_func_args();
 bool consume(char *op);
-Token *consume_ident();
-Token *consume_return();
-Token *consume_if();
-Token *consume_else();
+Token *consume_kind(TokenKind kind);
 void expect(char *op);
 int expect_number();
 char *expect_ident();

@@ -26,12 +26,18 @@ void error_at(char *loc, char *fmt, ...) {
 
 bool starts_with(char *p, char *q) { return memcmp(p, q, strlen(q)) == 0; }
 
-bool is_alnum(char c) {
+bool is_aplha(char c) {
   // clang-format off
   return ('a' <= c && c <= 'z') || 
          ('A' <= c && c <= 'Z') || 
-         ('0' <= c && c <= '9') || 
          (c == '_');
+  // clang-format on
+}
+
+bool is_alnum(char c) {
+  // clang-format off
+  return is_aplha(c) || 
+         ('0' <= c && c <= '9');
   // clang-format on
 }
 
@@ -107,12 +113,7 @@ void tokenize() {
     }
 
     // identifier (multiple-letter variable name)
-    // clang-format off
-    if (('a' <= *p && *p <= 'z') ||
-        ('A' <= *p && *p <= 'Z') || 
-        *p == '_')
-    // clang-format on
-    {
+    if (is_aplha(*p)) {
       char *q = p;
       while (is_alnum(*p)) p++;
       int len = p - q;
@@ -120,6 +121,7 @@ void tokenize() {
       continue;
     }
 
+    // number
     if (isdigit(*p)) {
       cur = new_token(TK_NUM, cur, p, 0);
       char *q = p;
