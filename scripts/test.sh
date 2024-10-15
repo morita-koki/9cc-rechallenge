@@ -316,6 +316,28 @@ mkmk(x) {
 }
 "
 
+assert 10 "
+main() {
+  return bar(1,2,3,1,1,2);
+}
+bar(a,b,c,d,e,f) {
+  return a + b + c + d + e + f;
+}
+"
+
+assert 10 "
+main() {
+  a = 5;
+  b = 10;
+  c = &a;
+  d = &b;
+  return *&b;
+}
+"
+
+assert 10 "main() { a=10; return *&a; }"
+assert 10 "main() { a=10; b=&a; c=&b; return **c; }"
+
 
 # error check
 # assert 6 "1 + 2 ++ 3"

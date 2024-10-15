@@ -40,7 +40,7 @@ typedef enum {
   ND_LT,        // <
   ND_LE,        // <=
   ND_ASSIGN,    // =
-  ND_LVAR,      // ローカル変数
+  ND_VAR,       // ローカル変数
   ND_RETURN,    // return
   ND_IF,        // if
   ND_ELSE,      // else
@@ -48,6 +48,8 @@ typedef enum {
   ND_FOR,       // for
   ND_FUNCCALL,  // 関数呼び出し
   ND_BLOCK,     // {}
+  ND_ADDR,      // アドレス &
+  ND_DEREF,     // 間接参照 *
   ND_NUM,       // 整数
 } NodeKind;
 
@@ -142,6 +144,8 @@ Node *primary();
 /* generator */
 void codegen(Function *prog);
 void gen(Node *node);
-void gen_lval(Node *node);
+void gen_addr(Node *node);
+void load();
+void store();
 
 #endif

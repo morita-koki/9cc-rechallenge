@@ -130,20 +130,21 @@ void gen(Node *node) {
     case ND_NUM:
       printf("  push %d\n", node->val);
       return;
-    case ND_LVAR:
-      gen_lval(node);
-      printf("  pop rax\n");
-      printf("  mov rax, [rax]\n");
-      printf("  push rax\n");
+    case ND_VAR:
+      gen_addr(node);
+      load();
       return;
     case ND_ASSIGN:
-      gen_lval(node->lhs);
+      gen_addr(node->lhs);
       gen(node->rhs);
-
-      printf("  pop rdi\n");
-      printf("  pop rax\n");
-      printf("  mov [rax], rdi\n");
-      printf("  push rdi\n");
+      store();
+      return;
+    case ND_ADDR:
+      gen_addr(node->lhs);
+      return;
+    case ND_DEREF:
+      gen(node->lhs);
+      load();
       return;
   }
 
@@ -192,11 +193,29 @@ void gen(Node *node) {
   printf("  push rax\n");
 }
 
-void gen_lval(Node *node) {
-  if (node->kind != ND_LVAR) {
-    error("代入の左辺値が変数ではありません");
+void gen_addr(Node *node) {
+  switch (node->kind) {
+    case ND_VAR:
+      printf("  lea rax, [rbp-%d]\n", node->var->offset);
+      printf("  push rax\n");
+      return;
+    case ND_DEREF:
+      gen(node->lhs);
+      return;
   }
 
-  printf("  lea rax, [rbp-%d]\n", node->var->offset);
+  error("not a lvalue");
+}
+
+void load() {
+  printf("  pop rax\n");
+  printf("  mov rax, [rax]\n");
   printf("  push rax\n");
+}
+
+void store() {
+  printf("  pop rdi\n");
+  printf("  pop rax\n");
+  printf("  mov [rax], rdi\n");
+  printf("  push rdi\n");
 }

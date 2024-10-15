@@ -145,7 +145,7 @@ Node *new_node_num(int val) {
   relational = add ("<" add | "<=" add | ">" add | ">=" add)*
   add        = mul ("+" mul | "-" mul)*
   mul        = unary ("*" unary | "/" unary)*
-  unary      = ("+" | "-")? unary | primary
+  unary      = ("+" | "-" | "&" | "*")? unary | primary
   primary    = num | ident ("(" "")")? | "(" expr ")"
 */
 
@@ -318,6 +318,8 @@ Node *mul() {
 Node *unary() {
   if (consume("+")) return unary();
   if (consume("-")) return new_node(ND_SUB, new_node_num(0), unary());
+  if (consume("&")) return new_node(ND_ADDR, unary(), NULL);
+  if (consume("*")) return new_node(ND_DEREF, unary(), NULL);
   return primary();
 }
 
@@ -352,7 +354,7 @@ Node *primary() {
     }
 
     // ANCHOR: local variable
-    Node *node = new_node(ND_LVAR, NULL, NULL);
+    Node *node = new_node(ND_VAR, NULL, NULL);
     Var *var = find_var(tok);
     if (var) {
       node->var = var;
