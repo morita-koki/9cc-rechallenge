@@ -366,12 +366,37 @@ int main() {
 }
 "
 
-# assert 10 "int main() { a=10; return *&a; }"
-# assert 10 "int main() { a=10; b=&a; c=&b; return **c; }"
+# 変数がポインタの場合のテスト
+# 一般的なアドレス演算はできない
+# not support *(&a+1)
+assert 10 "
+int main() {
+  int a = 5;
+  int b = 10;
+  int *c = &a;
+  return *(c + 1);
+}
+"
+
+assert 10 "
+int main() {
+  int a = 10;
+  int b = 5;
+  int *c = &b;
+  return *(c - 1);
+}
+"
+
+# failed
+# assert 10 "
+# int main() {
+#   int a = 5;
+#   int b = 10;
+#   return *(&a + 1);
+# }
+# "
 
 
-# error check
-# assert 6 "1 + 2 ++ 3"
-# assert 8 "1 + 2 + 3 3"
+
 
 echo OK
