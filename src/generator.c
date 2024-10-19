@@ -38,6 +38,8 @@ void codegen(Function *prog) {
 
 void gen(Node *node) {
   switch (node->kind) {
+    case ND_NULL:
+      return;
     case ND_FUNCCALL:
       for (int i = 0; i < node->arg_count; i++) {
         gen(node->args[i]);

@@ -112,6 +112,13 @@ void tokenize() {
       continue;
     }
 
+    // int
+    if (starts_with(p, "int") && !is_alnum(p[3])) {
+      cur = new_token(TK_RESERVED, cur, p, 3);
+      p += 3;
+      continue;
+    }
+
     // identifier (multiple-letter variable name)
     if (is_aplha(*p)) {
       char *q = p;

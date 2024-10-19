@@ -51,6 +51,7 @@ typedef enum {
   ND_ADDR,      // アドレス &
   ND_DEREF,     // 間接参照 *
   ND_NUM,       // 整数
+  ND_NULL,      // 空
 } NodeKind;
 
 typedef struct Node Node;
@@ -132,6 +133,7 @@ Node *new_node_num(int val);
 Function *program();
 Function *function();
 Node *stmt();
+Node *declaration();
 Node *expr();
 Node *assign();
 Node *equality();

@@ -34,6 +34,8 @@ Var *push_var(char *name, int len) {
   return var;
 }
 
+// args       = arg ("," arg)*
+// arg        = "int" ident
 LVar *read_func_args() {
   // func(arg0, arg1, arg2)
   // locals: ...local1 -> local0 -> arg2 -> arg1 -> arg0
@@ -49,6 +51,7 @@ LVar *read_func_args() {
 
   while (!consume(")")) {
     cur->next = calloc(1, sizeof(LVar));
+    expect("int");
     char *name = expect_ident();
     cur->next->var = push_var(name, strlen(name));
     cur = cur->next;
@@ -60,9 +63,16 @@ LVar *read_func_args() {
   return head.next;
 }
 
-bool consume(char *op) {
-  if (token->kind != TK_RESERVED || strlen(op) != token->len ||
-      memcmp(token->str, op, token->len)) {
+Token *peek(char *s) {
+  if (token->kind != TK_RESERVED || strlen(s) != token->len ||
+      memcmp(token->str, s, token->len)) {
+    return NULL;
+  }
+  return token;
+}
+
+bool consume(char *s) {
+  if (!peek(s)) {
     return false;
   }
   token = token->next;
@@ -87,10 +97,10 @@ Token *consume_ident() {
   return tok;
 }
 
-void expect(char *op) {
-  if (token->kind != TK_RESERVED || strlen(op) != token->len ||
-      memcmp(token->str, op, token->len))
-    error_at(token->str, "expected \"%s\"", op);
+void expect(char *s) {
+  if (!peek(s)) {
+    error_at(token->str, "expected \"%s\"", s);
+  }
   token = token->next;
 }
 
@@ -132,13 +142,17 @@ Node *new_node_num(int val) {
 
 /* BNF (Backus-Naur Form)
   program    = function*
-  function   = ident "(" ")" "{" stmt* "}"
+  function   = type ident "(" params? ")" "{" stmt* "}"
+  params     = param ("," param)*
+  param      = "int" ident
   stmt       = expr ";"
               | "{" stmt* "}"
               | "if" "(" expr ")" stmt ("else" stmt)?
               | "while" "(" expr ")" stmt
               | "for" "(" expr? ";" expr? ";" expr? ")" stmt
               | "return" expr ";"
+              | declaration
+  declaration = "int" ident ("=" expr)? ";"
   expr       = assign
   assign     = equality ("=" assign)?
   equality   = relational ("==" relational | "!=" relational)*
@@ -161,9 +175,14 @@ Function *program() {
   return head.next;
 }
 
+// function   = "int" ident "(" args? ")" "{" stmt* "}"
+// args       = arg ("," arg)*
+// arg        = "int" ident
 Function *function() {
   locals = NULL;
   Function *fn = calloc(1, sizeof(Function));
+
+  expect("int");
   fn->name = expect_ident();
   expect("(");
   fn->args = read_func_args();
@@ -246,8 +265,30 @@ Node *stmt() {
     return node;
   }
 
+  if (peek("int")) {
+    return declaration();
+  }
+
   Node *node = expr();
   expect(";");
+  return node;
+}
+
+// declaration = "int" ident ("=" expr)? ";"
+Node *declaration() {
+  expect("int");
+  char *name = expect_ident();
+  Var *var = push_var(name, strlen(name));
+  if (consume(";")) {
+    return new_node(ND_NULL, NULL, NULL);
+  }
+
+  expect("=");
+  Node *node_var = new_node(ND_VAR, NULL, NULL);
+  node_var->var = var;
+  Node *node = new_node(ND_ASSIGN, node_var, expr());
+  expect(";");
+
   return node;
 }
 
@@ -360,11 +401,12 @@ Node *primary() {
       node->var = var;
     } else {
       // if new variable, add to locals
-      char *name = malloc(tok->len + 1);
-      memcpy(name, tok->str, tok->len);
-      name[tok->len] = '\0';
-      Var *var = push_var(name, tok->len);
-      node->var = var;
+      // char *name = malloc(tok->len + 1);
+      // memcpy(name, tok->str, tok->len);
+      // name[tok->len] = '\0';
+      // Var *var = push_var(name, tok->len);
+      // node->var = var;
+      error("undefined variable");
     }
     return node;
   }
