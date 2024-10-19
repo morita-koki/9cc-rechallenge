@@ -9,8 +9,8 @@ extern LVar *locals;
  */
 Var *find_var(Token *tok) {
   for (LVar *lvar = locals; lvar; lvar = lvar->next) {
-    if (lvar->var->len == tok->len &&
-        !memcmp(tok->str, lvar->var->name, lvar->var->len)) {
+    if (strlen(lvar->var->name) == tok->len &&
+        !memcmp(tok->str, lvar->var->name, tok->len)) {
       return lvar->var;
     }
   }
@@ -22,45 +22,16 @@ Var *find_var(Token *tok) {
  * must check if variable is already defined
  *    before calling this function
  */
-Var *push_var(char *name, int len) {
+Var *push_var(char *name, Type *ty) {
   Var *var = calloc(1, sizeof(Var));
   var->name = name;
-  var->len = len;
+  var->ty = ty;
 
   LVar *lvar = calloc(1, sizeof(LVar));
   lvar->var = var;
   lvar->next = locals;
   locals = lvar;
   return var;
-}
-
-// args       = arg ("," arg)*
-// arg        = "int" ident
-LVar *read_func_args() {
-  // func(arg0, arg1, arg2)
-  // locals: ...local1 -> local0 -> arg2 -> arg1 -> arg0
-  // args: arg0 -> arg1 -> arg2...
-
-  if (consume(")")) {
-    return NULL;
-  }
-
-  LVar head;
-  head.next = NULL;
-  LVar *cur = &head;
-
-  while (!consume(")")) {
-    cur->next = calloc(1, sizeof(LVar));
-    expect("int");
-    char *name = expect_ident();
-    cur->next->var = push_var(name, strlen(name));
-    cur = cur->next;
-    if (!consume(",")) {
-      expect(")");
-      break;
-    }
-  }
-  return head.next;
 }
 
 Token *peek(char *s) {
@@ -175,14 +146,55 @@ Function *program() {
   return head.next;
 }
 
-// function   = "int" ident "(" args? ")" "{" stmt* "}"
 // args       = arg ("," arg)*
 // arg        = "int" ident
+LVar *read_func_args() {
+  // func(arg0, arg1, arg2)
+  // locals: ...local1 -> local0 -> arg2 -> arg1 -> arg0
+  // args: arg0 -> arg1 -> arg2...
+
+  if (consume(")")) {
+    return NULL;
+  }
+
+  LVar head;
+  head.next = NULL;
+  LVar *cur = &head;
+
+  while (!consume(")")) {
+    cur->next = calloc(1, sizeof(LVar));
+    Type *ty = read_type();
+    char *name = expect_ident();
+    cur->next->var = push_var(name, ty);
+    cur = cur->next;
+    if (!consume(",")) {
+      expect(")");
+      break;
+    }
+  }
+  return head.next;
+}
+
+Type *read_type() {
+  if (!consume("int")) {
+    error_at(token->str, "expected type");
+  }
+  Type *ty = int_type();
+  while (consume("*")) {
+    ty = pointer_to(ty);
+  }
+  return ty;
+}
+
+// type       = "int" "*"*
+// function   = "int" ident "(" args? ")" "{" stmt* "}"
+// args       = arg ("," arg)*
+// arg        = type ident
 Function *function() {
   locals = NULL;
   Function *fn = calloc(1, sizeof(Function));
 
-  expect("int");
+  read_type();  // function return type, now only int
   fn->name = expect_ident();
   expect("(");
   fn->args = read_func_args();
@@ -265,7 +277,7 @@ Node *stmt() {
     return node;
   }
 
-  if (peek("int")) {
+  if (peek("int")) {  // only check if next token is "int"
     return declaration();
   }
 
@@ -276,9 +288,9 @@ Node *stmt() {
 
 // declaration = "int" ident ("=" expr)? ";"
 Node *declaration() {
-  expect("int");
+  Type *ty = read_type();
   char *name = expect_ident();
-  Var *var = push_var(name, strlen(name));
+  Var *var = push_var(name, ty);
   if (consume(";")) {
     return new_node(ND_NULL, NULL, NULL);
   }
@@ -400,12 +412,6 @@ Node *primary() {
     if (var) {
       node->var = var;
     } else {
-      // if new variable, add to locals
-      // char *name = malloc(tok->len + 1);
-      // memcpy(name, tok->str, tok->len);
-      // name[tok->len] = '\0';
-      // Var *var = push_var(name, tok->len);
-      // node->var = var;
       error("undefined variable");
     }
     return node;

@@ -336,15 +336,35 @@ int bar(int a, int b, int c, int d, int e, int f) {
 }
 "
 
-# assert 10 "
-# int main() {
-#   a = 5;
-#   b = 10;
-#   c = &a;
-#   d = &b;
-#   return *&b;
-# }
-# "
+
+assert 10 "
+int main() {
+  int a;
+  int *b;
+  a = 10;
+  b = &a;
+  return *b;
+}
+"
+
+assert 10 "
+int main() {
+  int a = 5;
+  int b = 10;
+  int *c = &a;
+  int *d = &b;
+  return *d;
+}
+"
+
+assert 10 "
+int main() {
+  int a = 10;
+  int *b = &a;
+  int **c = &b;
+  return **c;
+}
+"
 
 # assert 10 "int main() { a=10; return *&a; }"
 # assert 10 "int main() { a=10; b=&a; c=&b; return **c; }"

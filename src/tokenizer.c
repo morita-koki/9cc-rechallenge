@@ -44,10 +44,17 @@ bool is_alnum(char c) {
 Token *new_token(TokenKind kind, Token *cur, char *str, int len) {
   Token *tok = calloc(1, sizeof(Token));
   tok->kind = kind;
-  tok->str = str;
+  tok->str = strndup(str, len);
   tok->len = len;
   cur->next = tok;
   return tok;
+}
+
+char *strndup(char *p, int len) {
+  char *s = malloc(len + 1);
+  memcpy(s, p, len);
+  s[len] = '\0';
+  return s;
 }
 
 void tokenize() {

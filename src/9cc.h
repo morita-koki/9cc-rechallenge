@@ -9,6 +9,21 @@
 #include <string.h>
 
 typedef enum {
+  TY_INT,
+  TY_PTR,
+} TypeKind;
+
+typedef struct Type Type;
+
+struct Type {
+  TypeKind kind;
+  Type *ptr_to;
+};
+
+Type *int_type();
+Type *pointer_to(Type *base);
+
+typedef enum {
   TK_RESERVED,  // 記号
   TK_IDENT,     // 識別子 変数名、関数名
   TK_NUM,       // 数字
@@ -94,7 +109,7 @@ struct LVar {
 
 struct Var {
   char *name;
-  int len;
+  Type *ty;
   int offset;
 };
 
@@ -115,12 +130,13 @@ void error_at(char *loc, char *fmt, ...);
 bool starts_with(char *p, char *q);
 bool is_alpha(char c);
 bool is_alnum(char c);
+char *strndup(char *p, int len);
 Token *new_token(TokenKind kind, Token *cur, char *str, int len);
 void tokenize();
 
 /* parser funcions (AST) */
 Var *find_var(Token *tok);
-Var *push_var(char *name, int len);
+Var *push_var(char *name, Type *ty);
 LVar *read_func_args();
 bool consume(char *op);
 Token *consume_kind(TokenKind kind);
@@ -132,6 +148,7 @@ Node *new_node(NodeKind kind, Node *lhs, Node *rhs);
 Node *new_node_num(int val);
 Function *program();
 Function *function();
+Type *read_type();
 Node *stmt();
 Node *declaration();
 Node *expr();
