@@ -1,6 +1,9 @@
 #!/bin/bash
 
 gcc -xc -c -o tmp_func.o - <<EOF
+#include <stdio.h>
+#include <stdlib.h>
+
 int foo() {
   return 5;
 }
@@ -16,6 +19,14 @@ int sub(int x, int y) {
 int add6(int a, int b, int c, int d, int e, int f) {
   return a + b + c + d + e + f;
 }
+
+void alloc4(int **p, int a, int b, int c, int d) {
+  *p = malloc(4 * sizeof(int));
+  (*p)[0] = a;
+  (*p)[1] = b;
+  (*p)[2] = c;
+  (*p)[3] = d;
+} 
 EOF
 
 
@@ -369,24 +380,52 @@ int main() {
 # 変数がポインタの場合のテスト
 # 一般的なアドレス演算はできない
 # not support *(&a+1)
-assert 10 "
-int main() {
-  int a = 5;
-  int b = 10;
-  int *c = &a;
-  return *(c + 1);
-}
-"
+# assert 10 "
+# int main() {
+#   int a = 5;
+#   int b = 10;
+#   int* c = &a;
+#   return *(c + 1);
+# }
+# "
+
+# assert 10 "
+# int main() {
+#   int a = 10;
+#   int b = 5;
+#   int* c = &b;
+#   return *(c - 1);
+# }
+# "
+
+
 
 assert 10 "
 int main() {
-  int a = 10;
-  int b = 5;
-  int *c = &b;
-  return *(c - 1);
+  int* p;
+  alloc4(&p, 1, 3, 5, 10);
+  int* q; 
+  q = p + 3;
+  return *q;
 }
 "
 
+assert 5 "
+int main() {
+  int* p;
+  alloc4(&p, 1, 3, 5, 10);
+  int* q = p + 2; 
+  return *q;
+}
+"
+
+assert 3 "
+int main() {
+  int* p;
+  alloc4(&p, 1, 3, 5, 10);
+  return *(p + 1);
+}
+"
 # failed
 # assert 10 "
 # int main() {
