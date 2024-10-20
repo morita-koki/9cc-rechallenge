@@ -426,15 +426,40 @@ int main() {
   return *(p + 1);
 }
 "
-# failed
+
+# general address operation
 # assert 10 "
 # int main() {
-#   int a = 5;
-#   int b = 10;
-#   return *(&a + 1);
+#   int* p;
+#   alloc4(&p, 1, 3, 5, 10);
+#   int **q = &p;
+#   return *(*q + 3);
 # }
 # "
 
+
+# sizeof
+assert 4 "
+int main() {
+  return sizeof(1);
+}
+"
+
+assert 8 "
+int main() {
+  int a = 1;
+  return sizeof(&a);
+}
+"
+
+
+
+assert 8 "
+int main() {
+  int a = 1;
+  return sizeof(&a + 1);
+}
+"
 
 
 

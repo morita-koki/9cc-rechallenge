@@ -14,6 +14,9 @@ typedef enum {
 } TypeKind;
 
 typedef struct Type Type;
+typedef struct Node Node;
+typedef struct LVar LVar;
+typedef struct Var Var;
 
 struct Type {
   TypeKind kind;
@@ -22,6 +25,7 @@ struct Type {
 
 Type *int_type();
 Type *pointer_to(Type *base);
+void visit(Node *node);
 
 typedef enum {
   TK_RESERVED,  // 記号
@@ -69,15 +73,13 @@ typedef enum {
   ND_NULL,      // 空
 } NodeKind;
 
-typedef struct Node Node;
-typedef struct LVar LVar;
-typedef struct Var Var;
-
 struct Node {
   Node *next;
   NodeKind kind;
   Node *lhs;
   Node *rhs;
+
+  Type *ty;
 
   // Block
   Node **block;

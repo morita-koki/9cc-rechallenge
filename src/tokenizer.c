@@ -126,6 +126,13 @@ void tokenize() {
       continue;
     }
 
+    // sizeof
+    if (starts_with(p, "sizeof") && !is_alnum(p[6])) {
+      cur = new_token(TK_RESERVED, cur, p, 6);
+      p += 6;
+      continue;
+    }
+
     // identifier (multiple-letter variable name)
     if (is_aplha(*p)) {
       char *q = p;

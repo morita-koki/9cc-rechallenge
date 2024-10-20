@@ -131,7 +131,9 @@ Node *new_node_num(int val) {
   relational = add ("<" add | "<=" add | ">" add | ">=" add)*
   add        = mul ("+" mul | "-" mul)*
   mul        = unary ("*" unary | "/" unary)*
-  unary      = ("+" | "-" | "&" | "*")? unary | primary
+  unary      = "sizeof" unary
+               | ("+" | "-" | "&" | "*")? unary
+               | primary
   primary    = num | ident ("(" "")")? | "(" expr ")"
 */
 
@@ -380,6 +382,13 @@ Node *mul() {
 }
 
 Node *unary() {
+  if (consume("sizeof")) {
+    Node *node = unary();
+    // nodeのtypeを知るためには、nodeを再起的に評価する必要がある
+    // chibiccではvisit, add_typeで実装されている。
+    visit(node);
+    return new_node_num(node->ty->kind == TY_INT ? 4 : 8);
+  }
   if (consume("+")) return unary();
   if (consume("-")) return new_node(ND_SUB, new_node_num(0), unary());
   if (consume("&")) return new_node(ND_ADDR, unary(), NULL);
