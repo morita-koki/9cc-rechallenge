@@ -90,6 +90,7 @@ char *expect_ident() {
   }
   char *ident_name = malloc(token->len + 1);
   memcpy(ident_name, token->str, token->len);
+  ident_name[token->len] = '\0';
   token = token->next;
   return ident_name;
 }
@@ -346,11 +347,21 @@ Node *add() {
   Node *node = mul();
 
   for (;;) {
-    if (consume("+"))
-      node = new_node(ND_ADD, node, mul());
-    else if (consume("-"))
-      node = new_node(ND_SUB, node, mul());
-    else
+    if (consume("+")) {
+      Node *r = mul();
+      if (node->kind == ND_VAR && node->var->ty->kind == TY_PTR) {
+        int n = node->var->ty->ptr_to->kind == TY_INT ? 4 : 8;
+        r = new_node(ND_MUL, r, new_node_num(n));
+      }
+      node = new_node(ND_ADD, node, r);
+    } else if (consume("-")) {
+      Node *r = mul();
+      if (node->kind == ND_VAR && node->var->ty->kind == TY_PTR) {
+        int n = node->var->ty->ptr_to->kind == TY_INT ? 4 : 8;
+        r = new_node(ND_MUL, r, new_node_num(n));
+      }
+      node = new_node(ND_SUB, node, r);
+    } else
       return node;
   }
 }
@@ -412,7 +423,7 @@ Node *primary() {
     if (var) {
       node->var = var;
     } else {
-      error("undefined variable");
+      error("undefined variable. %s", tok->str);
     }
     return node;
   }
