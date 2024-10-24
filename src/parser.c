@@ -264,7 +264,7 @@ Node *stmt() {
     node->kind = ND_FOR;
     expect("(");
     if (!consume(";")) {
-      node->init = expr();
+      node->init = new_node(ND_EXPR_STMT, expr(), NULL);
       expect(";");
     }
     if (!consume(";")) {
@@ -272,7 +272,7 @@ Node *stmt() {
       expect(";");
     }
     if (!consume(")")) {
-      node->inc = expr();
+      node->inc = new_node(ND_EXPR_STMT, expr(), NULL);
       expect(")");
     }
     node->then = stmt();
@@ -284,23 +284,30 @@ Node *stmt() {
     return declaration();
   }
 
-  Node *node = expr();
+  Node *node = new_node(ND_EXPR_STMT, expr(), NULL);
   expect(";");
   return node;
 }
 
-// declaration = "int" ident ("=" expr)? ";"
+// declaration = "int" ident ("[" num "]")* ("=" expr)? ";"
 Node *declaration() {
   Type *ty = read_type();
   char *name = expect_ident();
-  Var *var = push_var(name, ty);
+
+  while (consume("[")) {
+    int array_size = expect_number();
+    expect("]");
+    ty = array_of(ty, array_size);
+  }
+
   if (consume(";")) {
+    Var *var = push_var(name, ty);
     return new_node(ND_NULL, NULL, NULL);
   }
 
   expect("=");
   Node *node_var = new_node(ND_VAR, NULL, NULL);
-  node_var->var = var;
+  node_var->var = push_var(name, ty);
   Node *node = new_node(ND_ASSIGN, node_var, expr());
   expect(";");
 
@@ -349,23 +356,54 @@ Node *add() {
   Node *node = mul();
 
   for (;;) {
+    visit(node);
+    // fprintf(stderr, "node->ty->kind: %d\n", node->ty->kind);
     if (consume("+")) {
       Node *r = mul();
-      if (node->kind == ND_VAR && node->var->ty->kind == TY_PTR) {
-        int n = node->var->ty->ptr_to->kind == TY_INT ? 4 : 8;
+      if (node->ty->kind == TY_ARRAY) {
+        node->ty = pointer_to(node->var->ty->ptr_to);
+      }
+      if (node->ty->kind == TY_PTR) {
+        int n = size_of(node->ty->ptr_to);
         r = new_node(ND_MUL, r, new_node_num(n));
       }
       node = new_node(ND_ADD, node, r);
     } else if (consume("-")) {
       Node *r = mul();
-      if (node->kind == ND_VAR && node->var->ty->kind == TY_PTR) {
-        int n = node->var->ty->ptr_to->kind == TY_INT ? 4 : 8;
+      if (node->ty->kind == TY_ARRAY) {
+        node->ty = pointer_to(node->var->ty->ptr_to);
+      }
+      if (node->ty->kind == TY_PTR) {
+        int n = size_of(node->ty->ptr_to);
         r = new_node(ND_MUL, r, new_node_num(n));
       }
       node = new_node(ND_SUB, node, r);
     } else
       return node;
   }
+  // visit(node);
+
+  // for (;;) {
+  //   if (consume("+")) {
+  //     Node *r = mul();
+  //     if (node->kind == ND_VAR && node->ty->kind == TY_PTR) {
+  //       // int n = node->var->ty->ptr_to->kind == TY_INT ? 4 : 8;
+  //       int n = size_of(node->ty->ptr_to);
+  //       r = new_node(ND_MUL, r, new_node_num(n));
+  //     }
+  //     node = new_node(ND_ADD, node, r);
+  //   } else if (consume("-")) {
+  //     Node *r = mul();
+  //     if (node->kind == ND_VAR && node->ty->kind == TY_PTR) {
+  //       // int n = node->var->ty->ptr_to->kind == TY_INT ? 4 : 8;
+  //       int n = size_of(node->ty->ptr_to);
+  //       r = new_node(ND_MUL, r, new_node_num(n));
+  //     }
+  //     node = new_node(ND_SUB, node, r);
+  //   } else {
+  //     return node;
+  //   }
+  // }
 }
 
 Node *mul() {
@@ -387,7 +425,7 @@ Node *unary() {
     // nodeのtypeを知るためには、nodeを再起的に評価する必要がある
     // chibiccではvisit, add_typeで実装されている。
     visit(node);
-    return new_node_num(node->ty->kind == TY_INT ? 4 : 8);
+    return new_node_num(size_of(node->ty));
   }
   if (consume("+")) return unary();
   if (consume("-")) return new_node(ND_SUB, new_node_num(0), unary());

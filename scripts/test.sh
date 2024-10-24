@@ -47,6 +47,18 @@ assert() {
   fi
 }
 
+# assert 10 "
+# int main() {
+#   int a[4];
+#   *(a) = 1;
+#   *(a + 1) = 3;
+#   *(a + 2) = 5;
+#   *(a + 3) = 10;
+#   return *(a + 3);
+# }
+# "
+
+
 assert  0 "int main(){return 0;}"
 assert 41 "int main(){return 12 + 34 - 5;}"
 assert  6 "int main(){return 1 + 2 + 3;}"
@@ -377,28 +389,6 @@ int main() {
 }
 "
 
-# 変数がポインタの場合のテスト
-# 一般的なアドレス演算はできない
-# not support *(&a+1)
-# assert 10 "
-# int main() {
-#   int a = 5;
-#   int b = 10;
-#   int* c = &a;
-#   return *(c + 1);
-# }
-# "
-
-# assert 10 "
-# int main() {
-#   int a = 10;
-#   int b = 5;
-#   int* c = &b;
-#   return *(c - 1);
-# }
-# "
-
-
 
 assert 10 "
 int main() {
@@ -428,14 +418,14 @@ int main() {
 "
 
 # general address operation
-# assert 10 "
-# int main() {
-#   int* p;
-#   alloc4(&p, 1, 3, 5, 10);
-#   int **q = &p;
-#   return *(*q + 3);
-# }
-# "
+assert 10 "
+int main() {
+  int* p;
+  alloc4(&p, 1, 3, 5, 10);
+  int **q = &p;
+  return *(*q + 3);
+}
+"
 
 
 # sizeof
@@ -462,5 +452,35 @@ int main() {
 "
 
 
+assert 40 "
+int main() {
+  int a[10];
+  return sizeof(a);  
+}
+"
 
+
+assert 10 "
+int main() {
+  int a[4];
+  *(a) = 1;
+  *(a + 1) = 3;
+  *(a + 2) = 5;
+  *(a + 3) = 10;
+  return *(a + 3);
+}
+"
+
+
+
+assert 3 "
+int main() {
+  int a[2];
+  *a = 1;
+  *(a + 1) = 2;
+  int *p;
+  p = a;
+  return *p + *(p + 1);
+}
+"
 echo OK

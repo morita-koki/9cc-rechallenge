@@ -13,6 +13,28 @@ Type *pointer_to(Type *base) {
   return ty;
 }
 
+Type *array_of(Type *base, size_t size) {
+  Type *ty = calloc(1, sizeof(Type));
+  ty->kind = TY_ARRAY;
+  ty->ptr_to = base;
+  ty->array_size = size;
+  return ty;
+}
+
+size_t size_of(Type *ty) {
+  switch (ty->kind) {
+    case TY_INT:
+      return 4;
+    case TY_PTR:
+      return 8;
+    case TY_ARRAY:
+      return size_of(ty->ptr_to) * ty->array_size;
+  }
+
+  error("unknown type");
+  return 0;
+}
+
 void visit(Node *node) {
   if (!node) {
     return;
@@ -48,18 +70,18 @@ void visit(Node *node) {
       return;
 
     case ND_ADD:
-      if (node->rhs->ty->kind == TY_PTR) {  // 右がポインタなら左と入れ替える
+      if (node->rhs->ty->ptr_to) {  // 右がポインタなら左と入れ替える
         Node *tmp = node->lhs;
         node->lhs = node->rhs;
         node->rhs = tmp;
       }
-      if (node->rhs->ty->kind == TY_PTR) {  // 両方がポインタならエラー
+      if (node->rhs->ty->ptr_to) {  // 両方がポインタならエラー
         error("invalid pointer arithmetic");
       }
       node->ty = node->lhs->ty;
       return;
     case ND_SUB:
-      if (node->rhs->ty->kind == TY_PTR) {  // 右がポインタならエラー
+      if (node->rhs->ty->ptr_to) {  // 右がポインタならエラー
         error("invalid pointer arithmetic");
       }
       node->ty = node->lhs->ty;
@@ -68,13 +90,23 @@ void visit(Node *node) {
       node->ty = node->lhs->ty;
       return;
     case ND_ADDR:
+      if (node->lhs->ty->kind == TY_ARRAY) {
+        node->ty = pointer_to(node->lhs->ty->ptr_to);
+      }
       node->ty = pointer_to(node->lhs->ty);
       return;
     case ND_DEREF:
-      if (node->lhs->ty->kind != TY_PTR) {
+      if (!node->lhs->ty->ptr_to) {
         error("invalid pointer dereference");
       }
       node->ty = node->lhs->ty->ptr_to;
       return;
   }
+}
+
+void add_type(Function *prog) {
+  for (Function *fn = prog; fn; fn = fn->next)
+    for (Node *node = fn->node; node; node = node->next) {
+      visit(node);
+    }
 }

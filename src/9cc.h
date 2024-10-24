@@ -11,8 +11,11 @@
 typedef enum {
   TY_INT,
   TY_PTR,
+  TY_ARRAY,
 } TypeKind;
 
+typedef struct Function Function;
+typedef struct Token Token;
 typedef struct Type Type;
 typedef struct Node Node;
 typedef struct LVar LVar;
@@ -21,11 +24,15 @@ typedef struct Var Var;
 struct Type {
   TypeKind kind;
   Type *ptr_to;
+  size_t array_size;
 };
 
 Type *int_type();
 Type *pointer_to(Type *base);
+Type *array_of(Type *base, size_t size);
+size_t size_of(Type *ty);
 void visit(Node *node);
+void add_type(Function *prog);
 
 typedef enum {
   TK_RESERVED,  // 記号
@@ -39,8 +46,6 @@ typedef enum {
   TK_EOF,       // 入力終わり
 } TokenKind;
 
-typedef struct Token Token;
-
 struct Token {
   TokenKind kind;  // トークンの種類
   Token *next;     // 次のトークン
@@ -50,27 +55,28 @@ struct Token {
 };
 
 typedef enum {
-  ND_ADD,       // +
-  ND_SUB,       // -
-  ND_MUL,       // *
-  ND_DIV,       // /
-  ND_EQ,        // ==
-  ND_NE,        // !=
-  ND_LT,        // <
-  ND_LE,        // <=
-  ND_ASSIGN,    // =
-  ND_VAR,       // ローカル変数
-  ND_RETURN,    // return
-  ND_IF,        // if
-  ND_ELSE,      // else
-  ND_WHILE,     // while
-  ND_FOR,       // for
-  ND_FUNCCALL,  // 関数呼び出し
-  ND_BLOCK,     // {}
-  ND_ADDR,      // アドレス &
-  ND_DEREF,     // 間接参照 *
-  ND_NUM,       // 整数
-  ND_NULL,      // 空
+  ND_ADD,        // +
+  ND_SUB,        // -
+  ND_MUL,        // *
+  ND_DIV,        // /
+  ND_EQ,         // ==
+  ND_NE,         // !=
+  ND_LT,         // <
+  ND_LE,         // <=
+  ND_ASSIGN,     // =
+  ND_VAR,        // ローカル変数
+  ND_RETURN,     // return
+  ND_IF,         // if
+  ND_ELSE,       // else
+  ND_WHILE,      // while
+  ND_FOR,        // for
+  ND_FUNCCALL,   // 関数呼び出し
+  ND_BLOCK,      // {}
+  ND_ADDR,       // アドレス &
+  ND_DEREF,      // 間接参照 *
+  ND_NUM,        // 整数
+  ND_EXPR_STMT,  // 式文
+  ND_NULL,       // 空
 } NodeKind;
 
 struct Node {
@@ -114,8 +120,6 @@ struct Var {
   Type *ty;
   int offset;
 };
-
-typedef struct Function Function;
 
 struct Function {
   Function *next;
@@ -166,7 +170,7 @@ Node *primary();
 void codegen(Function *prog);
 void gen(Node *node);
 void gen_addr(Node *node);
-void load();
-void store();
+void load(Type *ty);
+void store(Type *ty);
 
 #endif

@@ -2,7 +2,8 @@
 
 extern LVar *locals;
 extern int label_count;
-extern char *argreg[];
+extern char *argreg4[];
+extern char *argreg8[];
 
 char *funcname;
 
@@ -21,7 +22,20 @@ void codegen(Function *prog) {
 
     int i = 0;
     for (LVar *lvar = func->args; lvar; lvar = lvar->next) {
-      printf("  mov [rbp-%d], %s\n", lvar->var->offset, argreg[i++]);
+      // printf("  mov [rbp-%d], %s\n", lvar->var->offset, argreg[i++]);
+      int size = size_of(lvar->var->ty);
+      switch (size) {
+        case 4:
+          printf("  mov [rbp-%d], %s\n", lvar->var->offset, argreg4[i]);
+          break;
+        case 8:
+          printf("  mov [rbp-%d], %s\n", lvar->var->offset, argreg8[i]);
+          break;
+        default:
+          error("unknown data size");
+          break;
+      }
+      i++;
     }
 
     for (Node *node = func->node; node; node = node->next) {
@@ -45,7 +59,7 @@ void gen(Node *node) {
         gen(node->args[i]);
       }
       for (int i = node->arg_count - 1; i >= 0; i--) {
-        printf("  pop %s\n", argreg[i]);
+        printf("  pop %s\n", argreg8[i]);
       }
 
       // check if RSP is aligned to 16 bytes
@@ -67,7 +81,6 @@ void gen(Node *node) {
     case ND_BLOCK:
       for (int i = 0; i < node->block_count; i++) {
         gen(node->block[i]);
-        printf("  pop rax\n");
       }
       return;
     case ND_FOR: {
@@ -124,6 +137,12 @@ void gen(Node *node) {
       }
       return;
     }
+    case ND_EXPR_STMT:
+      gen(node->lhs);
+      printf("  add rsp, 8\n");
+      // or pop the result
+      // printf("  pop rax\n");
+      return;
     case ND_RETURN:
       gen(node->lhs);
       printf("  pop rax\n");
@@ -134,19 +153,23 @@ void gen(Node *node) {
       return;
     case ND_VAR:
       gen_addr(node);
-      load();
+      if (node->ty->kind != TY_ARRAY) {
+        load(node->ty);
+      }
       return;
     case ND_ASSIGN:
       gen_addr(node->lhs);
       gen(node->rhs);
-      store();
+      store(node->ty);
       return;
     case ND_ADDR:
       gen_addr(node->lhs);
       return;
     case ND_DEREF:
       gen(node->lhs);
-      load();
+      if (node->ty->kind != TY_ARRAY) {
+        load(node->ty);
+      }
       return;
   }
 
@@ -209,15 +232,39 @@ void gen_addr(Node *node) {
   error("not a lvalue");
 }
 
-void load() {
+void load(Type *ty) {
   printf("  pop rax\n");
-  printf("  mov rax, [rax]\n");
+
+  int size = size_of(ty);
+  switch (size) {
+    case 4:
+      printf("  movsxd rax, dword ptr [rax]\n");
+      break;
+    case 8:
+      printf("  mov rax, [rax]\n");
+      break;
+    default:
+      error("unknown data size");
+      break;
+  }
   printf("  push rax\n");
 }
 
-void store() {
+void store(Type *ty) {
   printf("  pop rdi\n");
   printf("  pop rax\n");
-  printf("  mov [rax], rdi\n");
+
+  int size = size_of(ty);
+  switch (size) {
+    case 4:
+      printf("  mov [rax], edi\n");
+      break;
+    case 8:
+      printf("  mov [rax], rdi\n");
+      break;
+    default:
+      error("unknown data size");
+      break;
+  }
   printf("  push rdi\n");
 }
