@@ -80,6 +80,29 @@ int main() {
 }
 "
 
+assert 10 "
+int main() {
+  int a[4];
+  a[0] = 1;
+  a[1] = 2;
+  a[2] = 3;
+  a[3] = 4;
+  int b = sum(a, 4);
+  return b;
+}
+
+int sum(int *a, int size) {
+  int sum = 0;
+  int i;
+  for (i = 0; i < size; i = i + 1) {
+    sum = sum + *(a + i);
+  }
+  return sum;
+}
+"
+
+exit 0
+
 
 assert  0 "int main(){return 0;}"
 assert 41 "int main(){return 12 + 34 - 5;}"
