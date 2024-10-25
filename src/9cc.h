@@ -1,6 +1,7 @@
 #ifndef _9CC_H_
 #define _9CC_H_
 
+#include <assert.h>
 #include <ctype.h>
 #include <stdarg.h>
 #include <stdbool.h>

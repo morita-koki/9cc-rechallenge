@@ -181,9 +181,17 @@ void gen(Node *node) {
 
   switch (node->kind) {
     case ND_ADD:
+      if (node->ty->kind == TY_PTR || node->ty->kind == TY_ARRAY) {
+        int size = size_of(node->ty->ptr_to);
+        printf("  imul rdi, %d\n", size);
+      }
       printf("  add rax, rdi\n");
       break;
     case ND_SUB:
+      if (node->ty->kind == TY_PTR || node->ty->kind == TY_ARRAY) {
+        int size = size_of(node->ty->ptr_to);
+        printf("  imul rdi, %d\n", size);
+      }
       printf("  sub rax, rdi\n");
       break;
     case ND_MUL:

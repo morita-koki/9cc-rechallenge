@@ -47,16 +47,38 @@ assert() {
   fi
 }
 
-# assert 10 "
-# int main() {
-#   int a[4];
-#   *(a) = 1;
-#   *(a + 1) = 3;
-#   *(a + 2) = 5;
-#   *(a + 3) = 10;
-#   return *(a + 3);
-# }
-# "
+assert 10 "
+int main() {
+  int a[4];
+  *(a) = 1;
+  *(a + 1) = 3;
+  *(a + 2) = 5;
+  *(a + 3) = 10;
+  return *(a + 3);
+}
+"
+
+assert 10 "
+int main() {
+  int a[4];
+  a[0] = 1;
+  a[1] = 3;
+  a[2] = 5;
+  a[3] = 10;
+  return a[3];
+}
+"
+
+assert 10 "
+int main() {
+  int a[4];
+  a[0] = 1;
+  a[1] = 3;
+  a[2] = 5;
+  a[3] = 10;
+  return *(a + 3);
+}
+"
 
 
 assert  0 "int main(){return 0;}"
@@ -483,4 +505,16 @@ int main() {
   return *p + *(p + 1);
 }
 "
+
+assert 3 "
+int main() {
+  int a[2];
+  *a = 1;
+  a[1] = 2;
+  int *p;
+  p = a;
+  return a[0] + *(p + 1);
+}
+"
+
 echo OK

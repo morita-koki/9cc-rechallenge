@@ -116,7 +116,7 @@ Node *new_node_num(int val) {
   program    = function*
   function   = type ident "(" params? ")" "{" stmt* "}"
   params     = param ("," param)*
-  param      = "int" ident
+  param      = type ident
   stmt       = expr ";"
               | "{" stmt* "}"
               | "if" "(" expr ")" stmt ("else" stmt)?
@@ -124,7 +124,7 @@ Node *new_node_num(int val) {
               | "for" "(" expr? ";" expr? ";" expr? ")" stmt
               | "return" expr ";"
               | declaration
-  declaration = "int" ident ("=" expr)? ";"
+  declaration = type ident ("=" expr)? ";"
   expr       = assign
   assign     = equality ("=" assign)?
   equality   = relational ("==" relational | "!=" relational)*
@@ -134,7 +134,10 @@ Node *new_node_num(int val) {
   unary      = "sizeof" unary
                | ("+" | "-" | "&" | "*")? unary
                | primary
-  primary    = num | ident ("(" "")")? | "(" expr ")"
+  primary    = num
+               | ident ("(" "")")?
+               | ident "[" expr "]"
+               | "(" expr ")"
 */
 
 Function *program() {
@@ -356,54 +359,13 @@ Node *add() {
   Node *node = mul();
 
   for (;;) {
-    visit(node);
-    // fprintf(stderr, "node->ty->kind: %d\n", node->ty->kind);
     if (consume("+")) {
-      Node *r = mul();
-      if (node->ty->kind == TY_ARRAY) {
-        node->ty = pointer_to(node->var->ty->ptr_to);
-      }
-      if (node->ty->kind == TY_PTR) {
-        int n = size_of(node->ty->ptr_to);
-        r = new_node(ND_MUL, r, new_node_num(n));
-      }
-      node = new_node(ND_ADD, node, r);
+      node = new_node(ND_ADD, node, mul());
     } else if (consume("-")) {
-      Node *r = mul();
-      if (node->ty->kind == TY_ARRAY) {
-        node->ty = pointer_to(node->var->ty->ptr_to);
-      }
-      if (node->ty->kind == TY_PTR) {
-        int n = size_of(node->ty->ptr_to);
-        r = new_node(ND_MUL, r, new_node_num(n));
-      }
-      node = new_node(ND_SUB, node, r);
+      node = new_node(ND_SUB, node, mul());
     } else
       return node;
   }
-  // visit(node);
-
-  // for (;;) {
-  //   if (consume("+")) {
-  //     Node *r = mul();
-  //     if (node->kind == ND_VAR && node->ty->kind == TY_PTR) {
-  //       // int n = node->var->ty->ptr_to->kind == TY_INT ? 4 : 8;
-  //       int n = size_of(node->ty->ptr_to);
-  //       r = new_node(ND_MUL, r, new_node_num(n));
-  //     }
-  //     node = new_node(ND_ADD, node, r);
-  //   } else if (consume("-")) {
-  //     Node *r = mul();
-  //     if (node->kind == ND_VAR && node->ty->kind == TY_PTR) {
-  //       // int n = node->var->ty->ptr_to->kind == TY_INT ? 4 : 8;
-  //       int n = size_of(node->ty->ptr_to);
-  //       r = new_node(ND_MUL, r, new_node_num(n));
-  //     }
-  //     node = new_node(ND_SUB, node, r);
-  //   } else {
-  //     return node;
-  //   }
-  // }
 }
 
 Node *mul() {
@@ -462,6 +424,21 @@ Node *primary() {
       }
       node->arg_count = arg_count;
       return node;
+    }
+
+    // ANCHOR: array
+    if (consume("[")) {
+      Node *node = new_node(ND_VAR, NULL, NULL);
+      Var *var = find_var(tok);
+      if (var) {
+        // assert(var->ty->kind == TY_ARRAY);
+        node->var = var;
+      } else {
+        error("undefined variable. %s", tok->str);
+      }
+      Node *idx = expr();
+      expect("]");
+      return new_node(ND_DEREF, new_node(ND_ADD, node, idx), NULL);
     }
 
     // ANCHOR: local variable

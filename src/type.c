@@ -92,8 +92,9 @@ void visit(Node *node) {
     case ND_ADDR:
       if (node->lhs->ty->kind == TY_ARRAY) {
         node->ty = pointer_to(node->lhs->ty->ptr_to);
+      } else {
+        node->ty = pointer_to(node->lhs->ty);
       }
-      node->ty = pointer_to(node->lhs->ty);
       return;
     case ND_DEREF:
       if (!node->lhs->ty->ptr_to) {
