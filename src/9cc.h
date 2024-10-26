@@ -47,6 +47,7 @@ typedef enum {
   TK_ELSE,      // else
   TK_WHILE,     // while
   TK_FOR,       // for
+  TK_STR,       // 文字列リテラル
   TK_EOF,       // 入力終わり
 } TokenKind;
 
@@ -56,6 +57,9 @@ struct Token {
   int val;         // kindがTK_NUMの場合その数字
   char *str;       // トークン文字列
   int len;
+
+  char *contents;
+  int contents_len;
 };
 
 typedef enum {
@@ -124,6 +128,9 @@ struct Var {
   Type *ty;
   int offset;
   bool is_local;
+
+  char *contents;
+  int contents_len;
 };
 
 struct Function {
@@ -174,6 +181,7 @@ Node *relational();
 Node *add();
 Node *mul();
 Node *unary();
+Node *postfix();
 Node *primary();
 
 /* generator */

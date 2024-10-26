@@ -48,8 +48,36 @@ assert() {
 }
 
 
+assert 10 '
+int main() {
+  printf("Hello, World!");
+  return 10;
+}
+'
+
+assert 2 "
+int main() {
+  char x[4];
+  x[0] = 1;
+  x[1] = 3;
+  x[2] = 5;
+  x[3] = 10;
+  return char_sub(*(x+3), char_add(x[2], *(x+1)));
+}
+int char_add(char a, char b) {
+  return a + b;
+}
+int char_sub(char a, char b) {
+  return a - b;
+}
+"
 
 
+assert 97 'int main() { return "abc"[0]; }'
+assert 98 'int main() { return "abc"[1]; }'
+assert 99 'int main() { return "abc"[2]; }'
+assert 0 'int main() { return "abc"[3]; }'
+assert 4 'int main() { return sizeof("abc"); }'
 
 assert 3 "
 int main() {

@@ -147,6 +147,13 @@ void global_declaration() {
   push_var(name, ty, false);
 }
 
+char *new_label() {
+  static int count = 0;
+  char buf[20];
+  sprintf(buf, ".L.data.%d", count++);
+  return strndup(buf, strlen(buf));
+}
+
 /* BNF (Backus-Naur Form)
   program    = function*
   function   = type ident "(" params? ")" "{" stmt* "}"
@@ -442,7 +449,18 @@ Node *unary() {
   if (consume("-")) return new_node(ND_SUB, new_node_num(0), unary());
   if (consume("&")) return new_node(ND_ADDR, unary(), NULL);
   if (consume("*")) return new_node(ND_DEREF, unary(), NULL);
-  return primary();
+  return postfix();
+}
+
+Node *postfix() {
+  Node *node = primary();
+  while (consume("[")) {
+    // x[y] is short for *(x+y)
+    Node *exp = new_node(ND_ADD, node, expr());
+    expect("]");
+    node = new_node(ND_DEREF, exp, NULL);
+  }
+  return node;
 }
 
 Node *primary() {
@@ -475,21 +493,6 @@ Node *primary() {
       return node;
     }
 
-    // ANCHOR: array
-    if (consume("[")) {
-      Node *node = new_node(ND_VAR, NULL, NULL);
-      Var *var = find_var(tok);
-      if (var) {
-        // assert(var->ty->kind == TY_ARRAY);
-        node->var = var;
-      } else {
-        error("undefined variable. %s", tok->str);
-      }
-      Node *idx = expr();
-      expect("]");
-      return new_node(ND_DEREF, new_node(ND_ADD, node, idx), NULL);
-    }
-
     // ANCHOR: local variable
     Node *node = new_node(ND_VAR, NULL, NULL);
     Var *var = find_var(tok);
@@ -498,6 +501,19 @@ Node *primary() {
     } else {
       error("undefined variable. %s", tok->str);
     }
+    return node;
+  }
+
+  if (token->kind == TK_STR) {
+    Token *tok = token;
+    token = token->next;
+    Type *ty = array_of(char_type(), tok->contents_len + 1);
+    Var *var = push_var(new_label(), ty, false);
+    // exit(0);
+    var->contents = tok->contents;
+    var->contents_len = tok->contents_len;
+    Node *node = new_node(ND_VAR, NULL, NULL);
+    node->var = var;
     return node;
   }
 

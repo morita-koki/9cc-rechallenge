@@ -158,6 +158,21 @@ void tokenize() {
       continue;
     }
 
+    // string literal
+    if (*p == '"') {
+      p++;
+      char *q = p;
+      while (*p && *p != '"') p++;
+      if (!*p) error_at(p, "unclosed string literal");
+      int len = p - q;
+      char *contents = strndup(q, len);
+      cur = new_token(TK_STR, cur, contents, len);
+      cur->contents = contents;
+      cur->contents_len = len;
+      p++;
+      continue;
+    }
+
     error_at(p, "invalid token");
   }
 
