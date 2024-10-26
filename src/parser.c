@@ -2,6 +2,7 @@
 
 extern Token *token;
 extern LVar *locals;
+extern LVar *globals;
 
 /* find variable from locals
  * if found, return Var
@@ -9,6 +10,12 @@ extern LVar *locals;
  */
 Var *find_var(Token *tok) {
   for (LVar *lvar = locals; lvar; lvar = lvar->next) {
+    if (strlen(lvar->var->name) == tok->len &&
+        !memcmp(tok->str, lvar->var->name, tok->len)) {
+      return lvar->var;
+    }
+  }
+  for (LVar *lvar = globals; lvar; lvar = lvar->next) {
     if (strlen(lvar->var->name) == tok->len &&
         !memcmp(tok->str, lvar->var->name, tok->len)) {
       return lvar->var;
@@ -22,15 +29,22 @@ Var *find_var(Token *tok) {
  * must check if variable is already defined
  *    before calling this function
  */
-Var *push_var(char *name, Type *ty) {
+Var *push_var(char *name, Type *ty, bool is_local) {
   Var *var = calloc(1, sizeof(Var));
   var->name = name;
   var->ty = ty;
+  var->is_local = is_local;
 
   LVar *lvar = calloc(1, sizeof(LVar));
   lvar->var = var;
-  lvar->next = locals;
-  locals = lvar;
+
+  if (is_local) {
+    lvar->next = locals;
+    locals = lvar;
+  } else {
+    lvar->next = globals;
+    globals = lvar;
+  }
   return var;
 }
 
@@ -112,6 +126,27 @@ Node *new_node_num(int val) {
   return node;
 }
 
+bool is_function() {
+  Token *tok = token;
+  read_type();
+  bool isfunc = consume_ident() && consume("(");
+  token = tok;
+  return isfunc;
+}
+
+void global_declaration() {
+  Type *ty = read_type();
+  char *name = expect_ident();
+
+  while (consume("[")) {
+    int array_size = expect_number();
+    expect("]");
+    ty = array_of(ty, array_size);
+  }
+  expect(";");
+  push_var(name, ty, false);
+}
+
 /* BNF (Backus-Naur Form)
   program    = function*
   function   = type ident "(" params? ")" "{" stmt* "}"
@@ -140,16 +175,25 @@ Node *new_node_num(int val) {
                | "(" expr ")"
 */
 
-Function *program() {
+Program *program() {
   Function head;
   head.next = NULL;
   Function *cur = &head;
+  globals = NULL;
 
   while (!at_eof()) {
-    cur->next = function();
-    cur = cur->next;
+    if (is_function()) {
+      cur->next = function();
+      cur = cur->next;
+    } else {
+      global_declaration();
+    }
   }
-  return head.next;
+
+  Program *prog = calloc(1, sizeof(Program));
+  prog->funcs = head.next;
+  prog->globals = globals;
+  return prog;
 }
 
 // args       = arg ("," arg)*
@@ -171,7 +215,7 @@ LVar *read_func_args() {
     cur->next = calloc(1, sizeof(LVar));
     Type *ty = read_type();
     char *name = expect_ident();
-    cur->next->var = push_var(name, ty);
+    cur->next->var = push_var(name, ty, true);
     cur = cur->next;
     if (!consume(",")) {
       expect(")");
@@ -304,13 +348,13 @@ Node *declaration() {
   }
 
   if (consume(";")) {
-    Var *var = push_var(name, ty);
+    Var *var = push_var(name, ty, true);
     return new_node(ND_NULL, NULL, NULL);
   }
 
   expect("=");
   Node *node_var = new_node(ND_VAR, NULL, NULL);
-  node_var->var = push_var(name, ty);
+  node_var->var = push_var(name, ty, true);
   Node *node = new_node(ND_ASSIGN, node_var, expr());
   expect(";");
 

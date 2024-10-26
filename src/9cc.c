@@ -3,8 +3,9 @@
 /* Global variables */
 char* user_input;
 Token* token;
-Function* prog;
+// Program* prog;
 LVar* locals;
+LVar* globals;
 int label_count;
 char* argreg8[] = {"rdi", "rsi", "rdx", "rcx", "r8", "r9"};
 char* argreg4[] = {"edi", "esi", "edx", "ecx", "r8d", "r9d"};
@@ -17,10 +18,10 @@ int main(int argc, char** argv) {
 
   user_input = argv[1];
   tokenize();
-  prog = program();
+  Program* prog = program();
   add_type(prog);
 
-  for (Function* fn = prog; fn; fn = fn->next) {
+  for (Function* fn = prog->funcs; fn; fn = fn->next) {
     // set stack size
     int offset = 0;
     for (LVar* lvar = fn->locals; lvar; lvar = lvar->next) {

@@ -15,6 +15,7 @@ typedef enum {
   TY_ARRAY,
 } TypeKind;
 
+typedef struct Program Program;
 typedef struct Function Function;
 typedef struct Token Token;
 typedef struct Type Type;
@@ -33,7 +34,7 @@ Type *pointer_to(Type *base);
 Type *array_of(Type *base, size_t size);
 size_t size_of(Type *ty);
 void visit(Node *node);
-void add_type(Function *prog);
+void add_type(Program *prog);
 
 typedef enum {
   TK_RESERVED,  // 記号
@@ -120,6 +121,7 @@ struct Var {
   char *name;
   Type *ty;
   int offset;
+  bool is_local;
 };
 
 struct Function {
@@ -129,6 +131,11 @@ struct Function {
   LVar *args;    // arguments
   LVar *locals;  // local variables
   int stack_size;
+};
+
+struct Program {
+  LVar *globals;
+  Function *funcs;
 };
 
 /* tokenize functoins */
@@ -143,7 +150,7 @@ void tokenize();
 
 /* parser funcions (AST) */
 Var *find_var(Token *tok);
-Var *push_var(char *name, Type *ty);
+Var *push_var(char *name, Type *ty, bool is_local);
 LVar *read_func_args();
 bool consume(char *op);
 Token *consume_kind(TokenKind kind);
@@ -153,7 +160,7 @@ char *expect_ident();
 bool at_eof();
 Node *new_node(NodeKind kind, Node *lhs, Node *rhs);
 Node *new_node_num(int val);
-Function *program();
+Program *program();
 Function *function();
 Type *read_type();
 Node *stmt();
@@ -168,7 +175,7 @@ Node *unary();
 Node *primary();
 
 /* generator */
-void codegen(Function *prog);
+void codegen(Program *prog);
 void gen(Node *node);
 void gen_addr(Node *node);
 void load(Type *ty);

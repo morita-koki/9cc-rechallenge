@@ -48,6 +48,51 @@ assert() {
 }
 
 assert 10 "
+int a[4];
+int main() {
+  a[0] = 1; a[1] = 3; a[2] = 5; a[3] = 10;
+  return a[3];
+}
+"
+
+assert 10 "
+int a[4];
+int main() {
+  *a = 1; *(a + 1) = 3; *(a + 2) = 5; *(a + 3) = 10;
+  return a[3];
+}
+"
+
+assert 10 "
+int a[4];
+int main() {
+  *a = 1; *(a + 1) = 3; *(a + 2) = 5; *(a + 3) = 10;
+  return *(a + 3);
+}
+"
+
+assert 10 "
+int a[4];
+int main() {
+  a[0] = 1; a[1] = 3; a[2] = 5; a[3] = 10;
+  return *(a + 3);
+}
+"
+
+assert 10 "
+int a[4];
+int main() {
+  init_a();
+  return *(a + 3);
+}
+
+int init_a() {
+  a[0] = 1; a[1] = 3; a[2] = 5; a[3] = 10;
+}
+"
+
+
+assert 10 "
 int main() {
   int a[4];
   *(a) = 1;
@@ -101,7 +146,7 @@ int sum(int *a, int size) {
 }
 "
 
-exit 0
+# exit 0
 
 
 assert  0 "int main(){return 0;}"
