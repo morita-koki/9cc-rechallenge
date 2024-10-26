@@ -9,6 +9,7 @@ LVar* globals;
 int label_count;
 char* argreg8[] = {"rdi", "rsi", "rdx", "rcx", "r8", "r9"};
 char* argreg4[] = {"edi", "esi", "edx", "ecx", "r8d", "r9d"};
+char* argreg1[] = {"dil", "sil", "dl", "cl", "r8b", "r9b"};
 
 int main(int argc, char** argv) {
   if (argc != 2) {

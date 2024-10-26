@@ -226,10 +226,15 @@ LVar *read_func_args() {
 }
 
 Type *read_type() {
-  if (!consume("int")) {
+  Type *ty;
+  if (consume("int")) {
+    ty = int_type();
+  } else if (consume("char")) {
+    ty = char_type();
+  } else {
     error_at(token->str, "expected type");
   }
-  Type *ty = int_type();
+
   while (consume("*")) {
     ty = pointer_to(ty);
   }
@@ -327,7 +332,7 @@ Node *stmt() {
     return node;
   }
 
-  if (peek("int")) {  // only check if next token is "int"
+  if (peek("int") || peek("char")) {  // only check if next token is "int"
     return declaration();
   }
 

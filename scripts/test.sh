@@ -47,6 +47,37 @@ assert() {
   fi
 }
 
+
+
+
+
+assert 3 "
+int main() {
+  char x[3];
+  x[0] = -1;
+  x[1] = 2;
+  int y;
+  y = 4;
+  return x[0] + y;
+}
+"
+
+assert 10 "
+int main() {
+  char x;
+  x = 10;
+  return x;
+}
+"
+
+assert 10 "
+int main() {
+  char x[4];
+  x[0] = 1; x[1] = 2; x[2] = 3; x[3] = 4;
+  return *(x + 3) + 6;
+}
+"
+
 assert 10 "
 int a[4];
 int main() {

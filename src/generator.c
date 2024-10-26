@@ -4,6 +4,7 @@ extern LVar *locals;
 extern int label_count;
 extern char *argreg4[];
 extern char *argreg8[];
+extern char *argreg1[];
 
 char *funcname;
 
@@ -33,6 +34,9 @@ void emit_text(Program *prog) {
     for (LVar *lvar = fn->args; lvar; lvar = lvar->next) {
       int size = size_of(lvar->var->ty);
       switch (size) {
+        case 1:
+          printf("  mov [rbp-%d], %s\n", lvar->var->offset, argreg1[i]);
+          break;
         case 4:
           printf("  mov [rbp-%d], %s\n", lvar->var->offset, argreg4[i]);
           break;
@@ -305,6 +309,9 @@ void load(Type *ty) {
 
   int size = size_of(ty);
   switch (size) {
+    case 1:
+      printf("  movsx rax, byte ptr [rax]\n");
+      break;
     case 4:
       printf("  movsxd rax, dword ptr [rax]\n");
       break;
@@ -324,6 +331,9 @@ void store(Type *ty) {
 
   int size = size_of(ty);
   switch (size) {
+    case 1:
+      printf("  mov [rax], dil\n");
+      break;
     case 4:
       printf("  mov [rax], edi\n");
       break;

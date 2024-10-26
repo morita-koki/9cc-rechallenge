@@ -1,5 +1,11 @@
 #include "9cc.h"
 
+Type *char_type() {
+  Type *ty = calloc(1, sizeof(Type));
+  ty->kind = TY_CHAR;
+  return ty;
+}
+
 Type *int_type() {
   Type *ty = calloc(1, sizeof(Type));
   ty->kind = TY_INT;
@@ -23,6 +29,8 @@ Type *array_of(Type *base, size_t size) {
 
 size_t size_of(Type *ty) {
   switch (ty->kind) {
+    case TY_CHAR:
+      return 1;
     case TY_INT:
       return 4;
     case TY_PTR:

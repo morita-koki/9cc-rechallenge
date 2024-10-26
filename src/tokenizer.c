@@ -126,6 +126,13 @@ void tokenize() {
       continue;
     }
 
+    // char
+    if (starts_with(p, "char") && !is_alnum(p[4])) {
+      cur = new_token(TK_RESERVED, cur, p, 4);
+      p += 4;
+      continue;
+    }
+
     // sizeof
     if (starts_with(p, "sizeof") && !is_alnum(p[6])) {
       cur = new_token(TK_RESERVED, cur, p, 6);
