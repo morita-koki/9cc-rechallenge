@@ -3,6 +3,7 @@
 
 #include <assert.h>
 #include <ctype.h>
+#include <errno.h>
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -149,6 +150,7 @@ struct Program {
 
 /* tokenize functoins */
 void error(char *fmt, ...);
+// void verror_at(char *loc, char *fmt, ...);
 void error_at(char *loc, char *fmt, ...);
 bool starts_with(char *p, char *q);
 bool is_alpha(char c);

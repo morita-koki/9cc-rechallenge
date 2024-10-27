@@ -1,0 +1,1 @@
+int main() { return sub(20, 10); }

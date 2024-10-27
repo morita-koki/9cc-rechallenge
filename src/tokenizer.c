@@ -1,6 +1,7 @@
 #include "9cc.h"
 
 extern char *user_input;
+extern char *filename;
 extern Token *token;
 
 void error(char *fmt, ...) {
@@ -15,8 +16,20 @@ void error_at(char *loc, char *fmt, ...) {
   va_list ap;
   va_start(ap, fmt);
 
-  int pos = loc - user_input;  // calc byte
-  fprintf(stderr, "%s\n", user_input);
+  char *line = loc;
+  while (user_input < line && line[-1] != '\n') line--;
+
+  char *end = loc;
+  while (*end != '\n') end++;
+  int line_num = 1;
+  for (char *p = user_input; p < line; p++)
+    if (*p == '\n') line_num++;
+
+  int indent = fprintf(stderr, "%s:%d: ", filename, line_num);
+
+  fprintf(stderr, "%.*s\n", (int)(end - line), line);
+
+  int pos = loc - line + indent;
   fprintf(stderr, "%*s", pos, "");  // print pos spaces.
   fprintf(stderr, "^ ");
   vfprintf(stderr, fmt, ap);

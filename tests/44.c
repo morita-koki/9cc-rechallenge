@@ -1,0 +1,1 @@
+int main() { return add(4, add(2, 4)); }
