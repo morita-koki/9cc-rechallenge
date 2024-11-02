@@ -144,6 +144,10 @@ if [ "$type" = "advance" ]; then
   assert 10 "tests/advance/00.c"
   assert 10 "tests/advance/01.c"
   assert 10 "tests/advance/02.c"
+  assert  3 "tests/advance/03.c"
+  assert  0 "tests/advance/04.c"
+  assert  3 "tests/advance/05.c"
+  assert  0 "tests/advance/06.c"
 
 fi
 

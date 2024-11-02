@@ -349,15 +349,118 @@ Node *stmt() {
   return node;
 }
 
-// declaration = "int" ident ("[" num "]")* ("=" expr)? ";"
+bool initializer_end() {
+  Token *tok = token;
+  bool ret = consume("}") || consume(",") && consume("}");
+  token = tok;
+  return ret;
+}
+
+void expect_initializer_end() {
+  Token *tok = token;
+  if (consume(",") && consume("}")) return;
+  token = tok;
+  expect("}");
+}
+
+Node *lvar_initializer(Node *cur, Var *var, Type *ty) {
+  if (!consume("{")) {
+    Node *var_node = new_node(ND_VAR, NULL, NULL);
+    var_node->var = var;
+    Node *assign = new_node(ND_ASSIGN, var_node, expr());
+    cur->next = new_node(ND_EXPR_STMT, assign, NULL);
+    cur = cur->next;
+    return cur;
+  }
+
+  // handle "int a[] = {1,2,3}"
+  if (ty->array_size == -1) {
+    // int a[] = {1,2,3}
+    // a->type is pointer to int
+    // should be convert to below
+    // a[0] = 1
+    // a[1] = 2
+    // a[2] = 3
+    int i = 0;
+    do {
+      Node *lhs = new_node(ND_VAR, NULL, NULL);
+      lhs->var = var;
+      lhs = new_node(ND_ADD, lhs, new_node_num(i));
+      lhs = new_node(ND_DEREF, lhs, NULL);
+
+      Node *rhs = expr();
+      cur->next = new_node(ND_ASSIGN, lhs, rhs);
+      cur = cur->next;
+      i++;
+    } while (!initializer_end() && consume(","));
+
+    ty->array_size = i;
+    expect_initializer_end();
+    return cur;
+  }
+
+  // should be array-like initialization
+  // int a[3] = {1,2,hoge()}
+  // a->type is array of int
+  // should be convert to below
+  // a[0] = 1
+  // a[1] = 2
+  // a[2] = hoge()
+
+  int i = 0;
+  int array_size = ty->array_size;
+  // int array_size = 3;
+  // fprintf(stderr, "array_size: %d\n", array_size);
+  do {
+    if (i >= array_size) {
+      error_at(token->str, "excess elements in array initializer");
+    }
+
+    // a[i] = ...
+    // lhs := a[i], rhs := ...
+    Node *lhs = new_node(ND_VAR, NULL, NULL);
+    lhs->var = var;
+    lhs = new_node(ND_ADD, lhs, new_node_num(i));
+    lhs = new_node(ND_DEREF, lhs, NULL);
+
+    Node *rhs = expr();
+    cur->next = new_node(ND_ASSIGN, lhs, rhs);
+    // cur->next = new_node(ND_EXPR_STMT, assign, NULL);
+    cur = cur->next;
+    i++;
+  } while (!initializer_end() && consume(","));
+
+  // fill the rest of array with 0
+  while (i < array_size) {
+    Node *lhs = new_node(ND_VAR, NULL, NULL);
+    lhs->var = var;
+    lhs = new_node(ND_ADD, lhs, new_node_num(i));
+    lhs = new_node(ND_DEREF, lhs, NULL);
+
+    Node *rhs = new_node_num(0);
+    Node *assign = new_node(ND_ASSIGN, lhs, rhs);
+    cur->next = new_node(ND_EXPR_STMT, assign, NULL);
+    cur = cur->next;
+    i++;
+  }
+
+  expect_initializer_end();
+  return cur;
+}
+
+// declaration = type ident ("[" num? "]")* ("=" lvar-initializer)? ";"
 Node *declaration() {
   Type *ty = read_type();
   char *name = expect_ident();
 
   while (consume("[")) {
-    int array_size = expect_number();
-    expect("]");
-    ty = array_of(ty, array_size);
+    if (consume("]")) {
+      ty = array_of(ty, -1);
+    } else {
+      int array_size = expect_number();
+      expect("]");
+      ty = array_of(ty, array_size);
+    }
   }
 
   if (consume(";")) {
@@ -367,9 +470,19 @@ Node *declaration() {
 
   // declaration with initialization
   expect("=");
-  Node *node_var = new_node(ND_VAR, NULL, NULL);
-  node_var->var = push_var(name, ty, true);
-  Node *node = new_node(ND_ASSIGN, node_var, expr());
+  Var *var = push_var(name, ty, true);
+  // Node *node = new_node(ND_VAR, NULL, NULL);
+  // node->var = var;
+
+  Node head;
+  head.next = NULL;
+  lvar_initializer(&head, var, var->ty);
+  Node *node = new_node(ND_BLOCK, NULL, NULL);
+  node->block = head.next;
+
+  // Node *node_var = new_node(ND_VAR, NULL, NULL);
+  // node_var->var = push_var(name, ty, true);
+  // Node *node = new_node(ND_ASSIGN, node_var, expr());
   expect(";");
 
   return node;
