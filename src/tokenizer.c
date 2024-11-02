@@ -70,6 +70,34 @@ char *strndup(char *p, int len) {
   return s;
 }
 
+bool skip_space(char **p) {
+  bool ret = false;
+  while (isspace(**p)) {
+    *p += 1;
+    ret = true;
+  }
+  return ret;
+}
+
+bool skip_comment(char **p) {
+  // skip block comment
+  if (strncmp(*p, "/*", 2) == 0) {
+    char *q = strstr(*p + 2, "*/");
+    if (!q) error_at(*p, "unclosed comment");
+    *p = q + 2;
+    return true;
+  }
+
+  // skip line comment
+  if (strncmp(*p, "//", 2) == 0) {
+    *p += 2;
+    while (**p != '\n') (*p)++;
+    return true;
+  }
+
+  return false;
+}
+
 void tokenize() {
   char *p = user_input;
   token = calloc(1, sizeof(Token));
@@ -77,10 +105,13 @@ void tokenize() {
   Token *cur = token;
 
   while (*p) {
-    if (isspace(*p)) {
-      p++;
-      continue;
-    }
+    // if (isspace(*p)) {
+    //   p++;
+    //   continue;
+    // }
+    if (skip_space(&p)) continue;
+
+    if (skip_comment(&p)) continue;
 
     // multi-letter punctuator
     if (starts_with(p, "==") || starts_with(p, "!=") || starts_with(p, "<=") ||
