@@ -104,8 +104,8 @@ void gen(Node *node) {
       printf("  push rax\n");
       return;
     case ND_BLOCK:
-      for (int i = 0; i < node->block_count; i++) {
-        gen(node->block[i]);
+      for (Node *n = node->block; n; n = n->next) {
+        gen(n);
       }
       return;
     case ND_FOR: {

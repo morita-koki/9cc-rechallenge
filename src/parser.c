@@ -283,13 +283,14 @@ Node *stmt() {
 
   if (consume("{")) {
     Node *node = new_node(ND_BLOCK, NULL, NULL);
-    int stmt_count = 0;
+    Node head;
+    head.next = NULL;
+    Node *cur = &head;
     while (!consume("}")) {
-      node->block = realloc(node->block, sizeof(Node *) * (stmt_count + 1));
-      node->block[stmt_count] = stmt();
-      stmt_count += 1;
+      cur->next = stmt();
+      cur = cur->next;
     }
-    node->block_count = stmt_count;
+    node->block = head.next;
     return node;
   }
 
@@ -362,8 +363,9 @@ Node *declaration() {
   if (consume(";")) {
     Var *var = push_var(name, ty, true);
     return new_node(ND_NULL, NULL, NULL);
-  }
+  }  // end of declaration without initialization
 
+  // declaration with initialization
   expect("=");
   Node *node_var = new_node(ND_VAR, NULL, NULL);
   node_var->var = push_var(name, ty, true);

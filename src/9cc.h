@@ -97,8 +97,7 @@ struct Node {
   Type *ty;
 
   // Block
-  Node **block;
-  int block_count;
+  Node *block;
 
   // if-else, while, for statement
   // "if" (cond) { then } "else" { els }

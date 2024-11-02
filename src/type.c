@@ -55,8 +55,8 @@ void visit(Node *node) {
   visit(node->init);
   visit(node->inc);
 
-  for (int i = 0; i < node->block_count; i++) {
-    visit(node->block[i]);
+  for (Node *n = node->block; n; n = n->next) {
+    visit(n);
   }
   for (int i = 0; i < node->arg_count; i++) {
     visit(node->args[i]);
