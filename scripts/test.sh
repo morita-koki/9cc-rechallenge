@@ -153,7 +153,10 @@ if [ "$type" = "advance" ]; then
   assert 24 "tests/advance/09.c"
   assert 24 "tests/advance/10.c"
   assert 24 "tests/advance/11.c"
-
+  assert 67 "tests/advance/12.c"
+  assert 67 "tests/advance/13.c"
+  assert 67 "tests/advance/14.c"
+  assert 67 "tests/advance/15.c"
 fi
 
 echo OK

@@ -14,8 +14,10 @@ void emit_data(Program *prog) {
     printf("%s:\n", lvar->var->name);
 
     if (lvar->var->contents) {
-      for (int i = 0; i < lvar->var->contents_len; i++)
-        printf("  .byte %d\n", lvar->var->contents[i]);
+      printf("  .string \"%.*s\"\n", lvar->var->contents_len,
+             lvar->var->contents);
+      // for (int i = 0; i < lvar->var->contents_len; i++)
+      //   printf("  .byte %d\n", lvar->var->contents[i]);
       continue;
     } else {
       printf("  .zero %ld\n", size_of(lvar->var->ty));

@@ -400,6 +400,31 @@ Node *lvar_init_zero(Node *cur, Var *var, Type *ty, Designator *des) {
 }
 
 Node *lvar_initializer(Node *cur, Var *var, Type *ty, Designator *des) {
+  // handle char a[] = "abc" || char a[4] = "abc"
+  if (ty->kind == TY_ARRAY && ty->ptr_to->kind == TY_CHAR &&
+      token->kind == TK_STR) {
+    Token *tok = token;
+    token = token->next;
+
+    if (ty->array_size == -1) ty->array_size = tok->contents_len + 1;
+
+    int len = (ty->array_size < tok->contents_len) ? ty->array_size
+                                                   : tok->contents_len;
+    int i;
+    for (i = 0; i < len; i++) {
+      Designator desg = {des, i};
+      Node *rhs = new_node_num(tok->contents[i]);
+      cur->next = new_desg_node(var, &desg, rhs);
+      cur = cur->next;
+    }
+
+    for (; i < ty->array_size; i++) {
+      Designator desg = {des, i};
+      cur = lvar_init_zero(cur, var, ty->ptr_to, &desg);
+    }
+    return cur;
+  }
+
   if (!consume("{")) {
     cur->next = new_desg_node(var, des, assign());
     cur = cur->next;
