@@ -363,89 +363,107 @@ void expect_initializer_end() {
   expect("}");
 }
 
-Node *lvar_initializer(Node *cur, Var *var, Type *ty) {
-  if (!consume("{")) {
+typedef struct Designator Designator;
+struct Designator {
+  Designator *next;
+  int index;
+};
+
+Node *new_desg_node2(Var *var, Designator *desg) {
+  if (!desg) {
     Node *var_node = new_node(ND_VAR, NULL, NULL);
     var_node->var = var;
-    Node *assign = new_node(ND_ASSIGN, var_node, expr());
-    cur->next = new_node(ND_EXPR_STMT, assign, NULL);
+    return var_node;
+  }
+  Node *node = new_desg_node2(var, desg->next);
+  node = new_node(ND_ADD, node, new_node_num(desg->index));
+  return new_node(ND_DEREF, node, NULL);
+}
+
+Node *new_desg_node(Var *var, Designator *desg, Node *rhs) {
+  Node *lhs = new_desg_node2(var, desg);
+  Node *node = new_node(ND_ASSIGN, lhs, rhs);
+  return new_node(ND_EXPR_STMT, node, NULL);
+}
+
+Node *lvar_init_zero(Node *cur, Var *var, Type *ty, Designator *des) {
+  if (ty->kind == TY_ARRAY) {
+    for (int i = 0; i < ty->array_size; i++) {
+      Designator desg = {des, i};
+      cur = lvar_init_zero(cur, var, ty->ptr_to, &desg);
+    }
+    return cur;
+  }
+  cur->next = new_desg_node(var, des, new_node_num(0));
+  cur = cur->next;
+  return cur;
+}
+
+Node *lvar_initializer(Node *cur, Var *var, Type *ty, Designator *des) {
+  if (!consume("{")) {
+    cur->next = new_desg_node(var, des, assign());
     cur = cur->next;
     return cur;
   }
 
-  // handle "int a[] = {1,2,3}"
-  if (ty->array_size == -1) {
-    // int a[] = {1,2,3}
-    // a->type is pointer to int
+  if (ty->kind == TY_ARRAY) {
+    // handle "int a[] = {1,2,3}"
+    if (ty->array_size == -1) {
+      // int a[] = {1,2,3}
+      // should be convert to below
+      // a[0] = 1
+      // a[1] = 2
+      // a[2] = 3
+      int i = 0;
+      do {
+        Designator desg = {des, i++};
+        cur = lvar_initializer(cur, var, ty->ptr_to, &desg);
+      } while (!initializer_end() && consume(","));
+
+      ty->array_size = i;
+      expect_initializer_end();
+      return cur;
+    }
+
+    // should be array-like initialization
+    // int a[3] = {1,2,hoge()}
+    // a->type is array of int
     // should be convert to below
     // a[0] = 1
     // a[1] = 2
-    // a[2] = 3
+    // a[2] = hoge()
+
+    // deal with
+    // int a[2][3] = {{1,2,3}, {4,5,6}}
+    // converts to
+    // a[0][0] = 1: *((*a + 0) + 0) = 1
+    // a[0][1] = 2: *((*a + 0) + 1) = 2
+    // a[0][2] = 3: *((*a + 0) + 2) = 3
+    // a[1][0] = 4: *((*a + 1) + 0) = 4
+    // a[1][1] = 5: *((*a + 1) + 1) = 5
+    // a[1][2] = 6: *((*a + 1) + 2) = 6
+
     int i = 0;
+    int array_size = ty->array_size;
     do {
-      Node *lhs = new_node(ND_VAR, NULL, NULL);
-      lhs->var = var;
-      lhs = new_node(ND_ADD, lhs, new_node_num(i));
-      lhs = new_node(ND_DEREF, lhs, NULL);
+      if (i > array_size) {
+        error_at(token->str, "excess elements in array initializer");
+      }
 
-      Node *rhs = expr();
-      cur->next = new_node(ND_ASSIGN, lhs, rhs);
-      cur = cur->next;
-      i++;
+      Designator desg = {des, i++};
+      cur = lvar_initializer(cur, var, ty->ptr_to, &desg);
+
     } while (!initializer_end() && consume(","));
-
-    ty->array_size = i;
     expect_initializer_end();
+
+    // fill the rest of array with 0
+    while (++i < array_size) {
+      Designator desg = {des, i};
+      cur = lvar_init_zero(cur, var, ty->ptr_to, &desg);
+    }
     return cur;
   }
-
-  // should be array-like initialization
-  // int a[3] = {1,2,hoge()}
-  // a->type is array of int
-  // should be convert to below
-  // a[0] = 1
-  // a[1] = 2
-  // a[2] = hoge()
-
-  int i = 0;
-  int array_size = ty->array_size;
-  // int array_size = 3;
-  // fprintf(stderr, "array_size: %d\n", array_size);
-  do {
-    if (i >= array_size) {
-      error_at(token->str, "excess elements in array initializer");
-    }
-
-    // a[i] = ...
-    // lhs := a[i], rhs := ...
-    Node *lhs = new_node(ND_VAR, NULL, NULL);
-    lhs->var = var;
-    lhs = new_node(ND_ADD, lhs, new_node_num(i));
-    lhs = new_node(ND_DEREF, lhs, NULL);
-
-    Node *rhs = expr();
-    cur->next = new_node(ND_ASSIGN, lhs, rhs);
-    // cur->next = new_node(ND_EXPR_STMT, assign, NULL);
-    cur = cur->next;
-    i++;
-  } while (!initializer_end() && consume(","));
-
-  // fill the rest of array with 0
-  while (i < array_size) {
-    Node *lhs = new_node(ND_VAR, NULL, NULL);
-    lhs->var = var;
-    lhs = new_node(ND_ADD, lhs, new_node_num(i));
-    lhs = new_node(ND_DEREF, lhs, NULL);
-
-    Node *rhs = new_node_num(0);
-    Node *assign = new_node(ND_ASSIGN, lhs, rhs);
-    cur->next = new_node(ND_EXPR_STMT, assign, NULL);
-    cur = cur->next;
-    i++;
-  }
-
-  expect_initializer_end();
-  return cur;
+  error_at(token->str, "invalid initializer");
 }
 
 // declaration = type ident ("[" num? "]")* ("=" lvar-initializer)? ";"
@@ -476,7 +494,7 @@ Node *declaration() {
 
   Node head;
   head.next = NULL;
-  lvar_initializer(&head, var, var->ty);
+  lvar_initializer(&head, var, var->ty, NULL);
   Node *node = new_node(ND_BLOCK, NULL, NULL);
   node->block = head.next;
 
