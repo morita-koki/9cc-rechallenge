@@ -24,6 +24,14 @@ typedef struct Type Type;
 typedef struct Node Node;
 typedef struct LVar LVar;
 typedef struct Var Var;
+typedef struct Initializer Initializer;
+
+struct Initializer {
+  Initializer *next;
+  int size;
+  long val;
+  char *label;  // ref to another global variable
+};
 
 struct Type {
   TypeKind kind;
@@ -131,6 +139,8 @@ struct Var {
 
   char *contents;
   int contents_len;
+
+  Initializer *initializer;
 };
 
 struct Function {

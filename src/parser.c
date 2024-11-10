@@ -134,6 +134,76 @@ bool is_function() {
   return isfunc;
 }
 
+Initializer *new_init_val(Initializer *cur, int size, int val) {
+  Initializer *init = calloc(1, sizeof(Initializer));
+  init->size = size;
+  init->val = val;
+  cur->next = init;
+  cur = cur->next;
+  return cur;
+}
+
+Initializer *new_init_label(Initializer *cur, char *label) {
+  Initializer *init = calloc(1, sizeof(Initializer));
+  init->label = label;
+  cur->next = init;
+  cur = cur->next;
+  return cur;
+}
+
+Initializer *gvar_init_string(char *p, int len) {
+  Initializer head;
+  head.next = NULL;
+  Initializer *cur = &head;
+
+  for (int i = 0; i < len; i++) {
+    cur = new_init_val(cur, 1, p[i]);
+  }
+  return head.next;
+}
+
+long eval(Node *node) {
+  switch (node->kind) {
+    case ND_ADD:
+      return eval(node->lhs) + eval(node->rhs);
+    case ND_SUB:
+      return eval(node->lhs) - eval(node->rhs);
+    case ND_MUL:
+      return eval(node->lhs) * eval(node->rhs);
+    case ND_DIV:
+      return eval(node->lhs) / eval(node->rhs);
+    case ND_EQ:
+      return eval(node->lhs) == eval(node->rhs);
+    case ND_NE:
+      return eval(node->lhs) != eval(node->rhs);
+    case ND_LT:
+      return eval(node->lhs) < eval(node->rhs);
+    case ND_LE:
+      return eval(node->lhs) <= eval(node->rhs);
+    case ND_NUM:
+      return node->val;
+  }
+  error_at(token->str, "not a constant expression");
+}
+
+Initializer *gvar_initializer(Initializer *cur, Type *ty) {
+  Token *tok = token;
+  Node *expr = equality();  // conditional
+
+  if (expr->kind == ND_ADDR) {
+    if (expr->lhs->kind != ND_VAR) {
+      error_at(tok->str, "invalid initializer");
+    }
+    return new_init_label(cur, expr->lhs->var->name);
+  }
+
+  if (expr->kind == ND_VAR && expr->var->ty->kind == TY_ARRAY) {
+    return new_init_label(cur, expr->var->name);
+  }
+
+  return new_init_val(cur, size_of(ty), eval(expr));
+}
+
 void global_declaration() {
   Type *ty = read_type();
   char *name = expect_ident();
@@ -143,8 +213,21 @@ void global_declaration() {
     expect("]");
     ty = array_of(ty, array_size);
   }
+
+  // check end of declaration
+  if (consume(";")) {
+    push_var(name, ty, false);
+    return;
+  }
+
+  // global variable with initializer
+  expect("=");
+  Var *var = push_var(name, ty, false);
+  Initializer head;
+  head.next = NULL;
+  gvar_initializer(&head, ty);
+  var->initializer = head.next;
   expect(";");
-  push_var(name, ty, false);
 }
 
 char *new_label() {

@@ -19,8 +19,22 @@ void emit_data(Program *prog) {
       // for (int i = 0; i < lvar->var->contents_len; i++)
       //   printf("  .byte %d\n", lvar->var->contents[i]);
       continue;
-    } else {
+    } else if (!lvar->var->initializer) {
       printf("  .zero %ld\n", size_of(lvar->var->ty));
+      continue;
+    }
+
+    for (Initializer *init = lvar->var->initializer; init; init = init->next) {
+      if (init->label) {
+        printf("  .quad %s\n", init->label);
+        continue;
+      }
+
+      if (init->size == 1) {
+        printf("  .byte %ld\n", init->val);
+      } else {
+        printf("  .%dbyte %ld\n", init->size, init->val);
+      }
     }
   }
 }
