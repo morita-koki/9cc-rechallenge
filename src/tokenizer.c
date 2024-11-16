@@ -122,7 +122,7 @@ void tokenize() {
     }
 
     // single-letter punctuator
-    if (strchr("+-*/()<>=;{},&[]", *p)) {
+    if (strchr("+-*/()<>=;{},&[].", *p)) {
       cur = new_token(TK_RESERVED, cur, p, 1);
       p += 1;
       continue;
@@ -179,6 +179,12 @@ void tokenize() {
 
     // sizeof
     if (starts_with(p, "sizeof") && !is_alnum(p[6])) {
+      cur = new_token(TK_RESERVED, cur, p, 6);
+      p += 6;
+      continue;
+    }
+
+    if (starts_with(p, "struct") && !is_alnum(p[6])) {
       cur = new_token(TK_RESERVED, cur, p, 6);
       p += 6;
       continue;

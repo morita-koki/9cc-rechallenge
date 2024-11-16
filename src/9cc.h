@@ -15,12 +15,14 @@ typedef enum {
   TY_INT,
   TY_PTR,
   TY_ARRAY,
+  TY_STRUCT,
 } TypeKind;
 
 typedef struct Program Program;
 typedef struct Function Function;
 typedef struct Token Token;
 typedef struct Type Type;
+typedef struct Member Member;
 typedef struct Node Node;
 typedef struct LVar LVar;
 typedef struct Var Var;
@@ -37,7 +39,16 @@ struct Type {
   TypeKind kind;
   Type *ptr_to;
   size_t array_size;
+  Member *members;
+
   bool is_incomplete;
+};
+
+struct Member {
+  Member *next;
+  Type *ty;
+  char *name;
+  int offset;
 };
 
 Type *char_type();
@@ -94,6 +105,7 @@ typedef enum {
   ND_DEREF,      // 間接参照 *
   ND_NUM,        // 整数
   ND_EXPR_STMT,  // 式文
+  ND_MEMBER,     // メンバアクセス
   ND_NULL,       // 空
 } NodeKind;
 
@@ -122,6 +134,10 @@ struct Node {
   char *funcname;
   Node **args;
   int arg_count;
+
+  // member access
+  char *member_name;
+  Member *member;
 
   Var *var;  // kindがND_LVARのとき
   int val;
@@ -181,6 +197,9 @@ char *expect_ident();
 bool at_eof();
 Node *new_node(NodeKind kind, Node *lhs, Node *rhs);
 Node *new_node_num(int val);
+Type *struct_decl();
+Member *struct_member();
+bool is_typename();
 Program *program();
 Function *function();
 Type *read_type();

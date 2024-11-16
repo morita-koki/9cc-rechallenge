@@ -37,10 +37,22 @@ size_t size_of(Type *ty) {
       return 8;
     case TY_ARRAY:
       return size_of(ty->ptr_to) * ty->array_size;
+    default:
+      assert(ty->kind == TY_STRUCT);
+      Member *mem = ty->members;
+      while (mem->next) mem = mem->next;
+      return mem->offset + size_of(mem->ty);
   }
 
   error("unknown type");
   return 0;
+}
+
+Member *find_member(Type *ty, char *name) {
+  assert(ty->kind == TY_STRUCT);
+  for (Member *mem = ty->members; mem; mem = mem->next)
+    if (!strcmp(mem->name, name)) return mem;
+  return NULL;
 }
 
 void visit(Node *node) {
@@ -104,6 +116,13 @@ void visit(Node *node) {
         node->ty = pointer_to(node->lhs->ty);
       }
       return;
+    case ND_MEMBER: {
+      if (node->lhs->ty->kind != TY_STRUCT) error("not a struct");
+      node->member = find_member(node->lhs->ty, node->member_name);
+      if (!node->member) error("specified member does not exist");
+      node->ty = node->member->ty;
+      return;
+    }
     case ND_DEREF:
       if (!node->lhs->ty->ptr_to) {
         error("invalid pointer dereference");

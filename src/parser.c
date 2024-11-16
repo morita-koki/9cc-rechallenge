@@ -365,18 +365,54 @@ LVar *read_func_args() {
 
 Type *read_type() {
   Type *ty;
-  if (consume("int")) {
+  if (!is_typename(token)) error_at(token->str, "expected type");
+  if (consume("int"))
     ty = int_type();
-  } else if (consume("char")) {
+  else if (consume("char"))
     ty = char_type();
-  } else {
-    error_at(token->str, "expected type");
-  }
+  else
+    ty = struct_decl();
 
   while (consume("*")) {
     ty = pointer_to(ty);
   }
   return ty;
+}
+
+Type *struct_decl() {
+  expect("struct");
+  expect("{");
+
+  Member head;
+  head.next = NULL;
+  Member *cur = &head;
+
+  while (!consume("}")) {
+    cur->next = struct_member();
+    cur = cur->next;
+  }
+
+  Type *ty = calloc(1, sizeof(Type));
+  ty->kind = TY_STRUCT;
+  ty->members = head.next;
+
+  // Assign offsets within the struct to members.
+  int offset = 0;
+  for (Member *mem = ty->members; mem; mem = mem->next) {
+    mem->offset = offset;
+    offset += size_of(mem->ty);
+  }
+
+  return ty;
+}
+
+Member *struct_member() {
+  Member *mem = calloc(1, sizeof(Member));
+  mem->ty = read_type();
+  mem->name = expect_ident();
+  mem->ty = type_suffix(mem->ty);
+  expect(";");
+  return mem;
 }
 
 // type       = "int" "*"*
@@ -404,6 +440,8 @@ Function *function() {
   fn->locals = locals;
   return fn;
 }
+
+bool is_typename() { return peek("char") || peek("int") || peek("struct"); }
 
 Node *stmt() {
   if (consume_kind(TK_RETURN)) {
@@ -471,7 +509,7 @@ Node *stmt() {
     return node;
   }
 
-  if (peek("int") || peek("char")) {  // only check if next token is "int"
+  if (is_typename()) {  // only check if next token is "int"
     return declaration();
   }
 
@@ -741,15 +779,25 @@ Node *unary() {
   return postfix();
 }
 
+// postfix = primary ("[" expr "]" | "." ident)*
 Node *postfix() {
   Node *node = primary();
-  while (consume("[")) {
-    // x[y] is short for *(x+y)
-    Node *exp = new_node(ND_ADD, node, expr());
-    expect("]");
-    node = new_node(ND_DEREF, exp, NULL);
+
+  for (;;) {
+    if (consume("[")) {
+      Node *exp = new_node(ND_ADD, node, expr());
+      expect("]");
+      node = new_node(ND_DEREF, exp, NULL);
+      continue;
+    }
+
+    if (consume(".")) {
+      node = new_node(ND_MEMBER, node, NULL);
+      node->member_name = expect_ident();
+      continue;
+    }
+    return node;
   }
-  return node;
 }
 
 Node *primary() {
