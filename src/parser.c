@@ -143,6 +143,13 @@ Initializer *new_init_val(Initializer *cur, int size, int val) {
   return cur;
 }
 
+Initializer *new_init_zero(Initializer *cur, int size) {
+  for (int i = 0; i < size; i++) {
+    cur = new_init_val(cur, 1, 0);
+  }
+  return cur;
+}
+
 Initializer *new_init_label(Initializer *cur, char *label) {
   Initializer *init = calloc(1, sizeof(Initializer));
   init->label = label;
@@ -186,8 +193,31 @@ long eval(Node *node) {
   error_at(token->str, "not a constant expression");
 }
 
+long const_expr() { return eval(equality()); }
+
 Initializer *gvar_initializer(Initializer *cur, Type *ty) {
   Token *tok = token;
+
+  // array initialization: int x[2] = {1, 2};
+  if (consume("{")) {
+    if (ty->kind == TY_ARRAY) {
+      int i = 0;
+      do {
+        cur = gvar_initializer(cur, ty->ptr_to);
+        i++;
+      } while (!initializer_end() && consume(","));
+      expect_initializer_end();
+      if (i < ty->array_size)
+        cur = new_init_zero(cur, size_of(ty->ptr_to) * (ty->array_size - i));
+      if (ty->is_incomplete) {
+        ty->array_size = i;
+        ty->is_incomplete = false;
+      }
+      return cur;
+    }
+  }
+
+  // simple initializer: int x = 3;
   Node *expr = equality();  // conditional
 
   if (expr->kind == ND_ADDR) {
@@ -204,15 +234,33 @@ Initializer *gvar_initializer(Initializer *cur, Type *ty) {
   return new_init_val(cur, size_of(ty), eval(expr));
 }
 
+Type *type_suffix(Type *ty) {
+  if (!consume("[")) return ty;
+
+  int sz = 0;
+  bool is_incomplete = true;
+  if (!consume("]")) {
+    sz = const_expr();
+    is_incomplete = false;
+    expect("]");
+  }
+
+  ty = type_suffix(ty);
+  ty = array_of(ty, sz);
+  ty->is_incomplete = is_incomplete;
+  return ty;
+}
+
 void global_declaration() {
   Type *ty = read_type();
   char *name = expect_ident();
+  ty = type_suffix(ty);
 
-  while (consume("[")) {
-    int array_size = expect_number();
-    expect("]");
-    ty = array_of(ty, array_size);
-  }
+  // while (consume("[")) {
+  //   int array_size = expect_number();
+  //   expect("]");
+  //   ty = array_of(ty, array_size);
+  // }
 
   // check end of declaration
   if (consume(";")) {

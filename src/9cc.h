@@ -37,6 +37,7 @@ struct Type {
   TypeKind kind;
   Type *ptr_to;
   size_t array_size;
+  bool is_incomplete;
 };
 
 Type *char_type();
@@ -194,6 +195,9 @@ Node *mul();
 Node *unary();
 Node *postfix();
 Node *primary();
+
+bool initializer_end();
+void expect_initializer_end();
 
 /* generator */
 void codegen(Program *prog);
